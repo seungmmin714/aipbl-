@@ -1,0 +1,312 @@
+<!DOCTYPE html><html lang="ko" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Investment MBTI - Survey</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary": "#002e6a",
+                      "surface-glass": "rgba(255, 255, 255, 0.03)",
+                      "surface-bright": "#363941",
+                      "error-container": "#93000a",
+                      "on-secondary-fixed": "#2c0051",
+                      "outline-variant": "#424754",
+                      "tertiary": "#ffb786",
+                      "on-surface-variant": "#c2c6d6",
+                      "inverse-primary": "#005ac2",
+                      "outline": "#8c909f",
+                      "surface-container-lowest": "#0b0e15",
+                      "secondary-fixed": "#f0dbff",
+                      "on-error-container": "#ffdad6",
+                      "on-secondary": "#490080",
+                      "primary-fixed-dim": "#adc6ff",
+                      "error": "#ffb4ab",
+                      "surface-dim": "#10131a",
+                      "inverse-on-surface": "#2e3038",
+                      "inverse-surface": "#e1e2ec",
+                      "surface-container-low": "#191b23",
+                      "secondary": "#ddb7ff",
+                      "primary-fixed": "#d8e2ff",
+                      "on-error": "#690005",
+                      "tertiary-fixed-dim": "#ffb786",
+                      "background": "#10131a",
+                      "muted-grey": "#94A3B8",
+                      "primary-container": "#4d8eff",
+                      "tertiary-container": "#df7412",
+                      "on-secondary-container": "#d6a9ff",
+                      "deep-space": "#0B0E14",
+                      "surface-variant": "#32353c",
+                      "surface-container-high": "#272a31",
+                      "secondary-container": "#6f00be",
+                      "surface-tint": "#adc6ff",
+                      "surface-container": "#1d2027",
+                      "surface": "#10131a",
+                      "on-tertiary-fixed": "#311400",
+                      "secondary-fixed-dim": "#ddb7ff",
+                      "on-primary-container": "#00285d",
+                      "surface-container-highest": "#32353c",
+                      "on-tertiary-container": "#461f00",
+                      "primary": "#adc6ff",
+                      "on-primary-fixed": "#001a42",
+                      "on-tertiary": "#502400",
+                      "cyan-accent": "#06B6D4",
+                      "on-tertiary-fixed-variant": "#723600",
+                      "electric-indigo": "#6366F1",
+                      "tertiary-fixed": "#ffdcc6",
+                      "on-background": "#e1e2ec",
+                      "on-primary-fixed-variant": "#004395",
+                      "on-secondary-fixed-variant": "#6900b3",
+                      "on-surface": "#e1e2ec"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "container-max": "1200px",
+                      "stack-sm": "8px",
+                      "margin-mobile": "20px",
+                      "section-gap": "80px",
+                      "stack-md": "16px",
+                      "stack-lg": "32px"
+              },
+              "fontFamily": {
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "mbti-code": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-mono": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "mbti-code": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "800"
+                              }
+                      ]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: #f4f5f9; /* light background */
+            color: #001a42; /* on-primary-fixed */
+        }
+        
+        .progress-track {
+            background-color: #e1e2ec; /* inverse-surface */
+            position: relative;
+            border-radius: 9999px;
+            overflow: hidden;
+            height: 8px;
+        }
+        
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #06B6D4 0%, #4d8eff 100%);
+            width: 10%;
+            height: 100%;
+            border-radius: 9999px;
+            position: relative;
+            box-shadow: 0 0 10px rgba(77, 142, 255, 0.5);
+        }
+        
+        .progress-glow {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px 2px #4d8eff;
+        }
+
+        .glass-card {
+            background: #ffffff;
+            border: 1px solid #e1e2ec;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        .option-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .option-card:hover {
+            background: #f8fafc;
+            border-color: #4d8eff; /* primary-container */
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(77, 142, 255, 0.15);
+        }
+        
+        .option-card:active {
+            transform: translateY(1px);
+        }
+
+        /* Ambient Glow Background */
+        .ambient-glow {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80vw;
+            height: 80vh;
+            background: radial-gradient(circle, rgba(77, 142, 255, 0.04) 0%, rgba(244, 245, 249, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-body-md text-body-md overflow-x-hidden">
+<!-- Ambient Background Effect -->
+<div class="ambient-glow"></div>
+<!-- Top Navigation -->
+<header class="w-full px-gutter pt-8 pb-4 flex flex-col gap-4 sticky top-0 z-10 bg-[#f4f5f9]/80 backdrop-blur-md">
+<div class="flex justify-between items-center w-full max-w-container-max mx-auto">
+<span class="font-label-mono text-label-mono text-on-primary-fixed-variant uppercase tracking-widest">문항 1 / 10</span>
+</div>
+<!-- Progress Bar -->
+<div class="w-full max-w-container-max mx-auto progress-track">
+<div class="progress-bar-fill">
+<div class="progress-glow"></div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-container-max mx-auto px-gutter py-stack-lg flex flex-col items-center justify-center min-h-[716px]">
+<!-- Question Container -->
+<div class="glass-card rounded-xl p-8 w-full max-w-3xl flex flex-col gap-section-gap slide-up-fade" style="opacity: 1; transform: translateY(0px); transition: opacity 0.6s ease-out, transform 0.6s ease-out;">
+<!-- Question Prompt -->
+<div class="text-center">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-primary-container mb-2">
+                    Q1. 투자 원금이 20% 손실 나면?
+                </h1>
+</div>
+<!-- Options Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-stack-md w-full">
+<!-- Option 1 -->
+<button class="option-card glass-card rounded-lg p-6 flex flex-col items-center justify-center gap-4 text-center min-h-[120px] group focus:outline-none focus:ring-2 focus:ring-primary" style="border-color: rgb(225, 226, 236); background: rgb(255, 255, 255);">
+<span class="material-symbols-outlined text-3xl text-[#93000a] group-hover:text-inverse-primary transition-colors" data-weight="fill">sell</span>
+<span class="font-body-md text-body-md text-on-primary-fixed group-hover:text-inverse-primary transition-colors">즉시 매도한다</span>
+</button>
+<!-- Option 2 -->
+<button class="option-card glass-card rounded-lg p-6 flex flex-col items-center justify-center gap-4 text-center min-h-[120px] group focus:outline-none focus:ring-2 focus:ring-primary" style="border-color: rgb(225, 226, 236); background: rgb(255, 255, 255);">
+<span class="material-symbols-outlined text-3xl text-tertiary-container group-hover:text-inverse-primary transition-colors">remove_shopping_cart</span>
+<span class="font-body-md text-body-md text-on-primary-fixed group-hover:text-inverse-primary transition-colors">일부 매도한다</span>
+</button>
+<!-- Option 3 -->
+<button class="option-card glass-card rounded-lg p-6 flex flex-col items-center justify-center gap-4 text-center min-h-[120px] group focus:outline-none focus:ring-2 focus:ring-primary" style="border-color: rgb(225, 226, 236); background: rgb(255, 255, 255); transform: scale(1);">
+<span class="material-symbols-outlined text-3xl text-outline group-hover:text-inverse-primary transition-colors">hourglass_empty</span>
+<span class="font-body-md text-body-md text-on-primary-fixed group-hover:text-inverse-primary transition-colors">기다린다</span>
+</button>
+<!-- Option 4 -->
+<button class="option-card glass-card rounded-lg p-6 flex flex-col items-center justify-center gap-4 text-center min-h-[120px] group focus:outline-none focus:ring-2 focus:ring-primary" style="border-color: rgb(77, 142, 255); background: rgba(77, 142, 255, 0.05); transform: scale(1);">
+<span class="material-symbols-outlined text-3xl text-inverse-primary group-hover:text-inverse-primary transition-colors" data-weight="fill">add_shopping_cart</span>
+<span class="font-body-md text-body-md text-on-primary-fixed group-hover:text-inverse-primary transition-colors">추가 매수한다</span>
+</button>
+</div>
+<div class="flex justify-between items-center pt-8 border-t border-outline-variant">
+    <button class="px-6 py-2 rounded-lg border border-outline text-muted-grey font-body-md hover:bg-surface-container-low transition-colors focus:outline-none focus:ring-2 focus:ring-primary">
+        이전
+    </button>
+    <button class="px-6 py-2 rounded-lg bg-primary text-on-primary font-body-md hover:opacity-90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary shadow-sm">
+        다음
+    </button>
+</div></div>
+</main>
+<script>
+        // Simple entrance animation
+        document.addEventListener('DOMContentLoaded', () => {
+            const card = document.querySelector('.slide-up-fade');
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+            
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100);
+            
+            // Add click handlers for demo purposes
+            const options = document.querySelectorAll('.option-card');
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove selected state from all
+                    options.forEach(opt => {
+                        opt.style.borderColor = '#e1e2ec';
+                        opt.style.background = '#ffffff';
+                    });
+                    
+                    // Add selected state to clicked
+                    this.style.borderColor = '#4d8eff';
+                    this.style.background = 'rgba(77, 142, 255, 0.05)';
+                    
+                    // In a real app, this would trigger navigation to next question
+                    setTimeout(() => {
+                        this.style.transform = 'scale(0.98)';
+                        setTimeout(() => {
+                            this.style.transform = 'scale(1)';
+                        }, 150);
+                    }, 50);
+                });
+            });
+        });
+    </script>
+
+
+</body></html>
