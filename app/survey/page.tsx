@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function SurveyPage() {
+  const router = useRouter();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [selectedOption, setSelectedOption] = useState<number | null>(3); // 네 번째 옵션을 기본 선택 처리하여 이미지와 싱크 맞춤
 
@@ -11,7 +12,7 @@ export default function SurveyPage() {
   const dummyQuestions = [
     {
       id: "q1",
-      text: "Q1. 투자 원금이 20% 손실 나면?",
+      text: "투자 원금이 20% 손실 나면?",
       options: [
         { label: "즉시 매도한다", icon: "sell", color: "text-[#93000a]" },
         { label: "일부 매도한다", icon: "remove_shopping_cart", color: "text-[#df7412]" },
@@ -22,6 +23,22 @@ export default function SurveyPage() {
   ];
 
   const q = dummyQuestions[0];
+
+  const handleNext = () => {
+    if (currentIdx < 9) {
+      setCurrentIdx((prev) => prev + 1);
+      setSelectedOption(null); // 다음 질문으로 넘어갈 때는 선택 초기화
+    } else {
+      router.push("/result/RDLG");
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentIdx > 0) {
+      setCurrentIdx((prev) => prev - 1);
+      setSelectedOption(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f4f5f9] text-[#001a42] flex flex-col font-body-md relative overflow-x-hidden">
@@ -60,7 +77,7 @@ export default function SurveyPage() {
           {/* Question Prompt */}
           <div className="text-center">
             <h1 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-[#00285d] mb-2">
-              {q.text}
+              Q{currentIdx + 1}. {q.text}
             </h1>
           </div>
 
@@ -97,17 +114,18 @@ export default function SurveyPage() {
           {/* Bottom Actions */}
           <div className="flex justify-between items-center pt-8 border-t border-[#e1e2ec]">
             <button
+              onClick={handlePrev}
               disabled={currentIdx === 0}
               className="px-6 py-2 rounded-lg border border-[#8c909f] text-slate-500 hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-30 disabled:pointer-events-none"
             >
               이전
             </button>
-            <Link
-              href="/result/RDLG"
+            <button
+              onClick={handleNext}
               className="px-6 py-2 rounded-lg bg-[#d8e2ff] text-[#001a42] font-semibold hover:opacity-90 transition-colors focus:outline-none"
             >
               다음
-            </Link>
+            </button>
           </div>
         </div>
       </main>
