@@ -58,4 +58,13 @@
 - 모서리 둥글기: 모든 기본 버튼과 컨텐츠 카드는 **16px (1rem, Tailwind `rounded-2xl` 또는 커스텀 `rounded-xl`)** 모서리 처리를 균일하게 적용합니다.
 
 ### 5.3 프로그레스 바 (Progress Bars)
-- 배경 트랙은 어두운 회청색, 채워지는 액티브 트랙은 **Cyan에서 Electric Blue로 이어지는 그라데이션**을 적용합니다.
+- 배경 트랙은 어두운 회청색, 채워지는 액티브 트랙은 **Cyan (#06B6D4)에서 Electric Blue (#6366F1)로 이어지는 그라데이션**을 적용합니다. 진행 끝 지점에는 밝은 네온 하이라이트(Leading Glow) 효과를 줍니다.
+
+### 5.4 설문 화면 전용 컴포넌트 (Survey Screen Components)
+- **진단 설문 카드 (Question Cards)**: 24px 내부 여백(Padding)을 가진 대형 반투명 유리 형태 컨테이너(`bg-surface-glass`, `border-white/5` 얇은 테두리, `backdrop-blur-md`). 공중에 떠 있는 듯한 레이어 감각을 부여합니다.
+- **선택지 버튼 (Answer Options)**: 모서리가 16px 둥글게 깎인 글래스모피즘 버튼(`bg-surface-glass`, `border border-white/10`). 호버 시 테두리가 `border-primary` (#6366F1)로 바뀌며 투명도가 낮아집니다.
+
+### 5.5 결과 화면 전용 컴포넌트 (Result Screen Components)
+- **결과 카드 (Result Card Summary)**: SNS 공유와 이미지 저장을 고려한 올인원 디자인. 한 장의 컴팩트한 고대비 카드 구조 내에 MBTI 코드(48px), 별명, 상세 정보 및 자산 배분 레이더 차트를 모두 포함하고 하단에 브랜딩 풋터를 둡니다.
+- **레이더 차트 (Radar Chart)**: 배경 그리드 선을 노출하지 않는 미니멀 스타일. 축 레이블은 `label-mono` (JetBrains Mono, 12px)로 세련되게 장식하고 데이터 폴리곤 영역은 여러 자산 클래스가 겹쳐 보일 수 있도록 반투명 컬러 레이어로 표현합니다.
+- **도넛 차트 (Donut/Pie Chart)**: 자산 배분 파이를 도넛 스타일로 묘사하고, 중앙 레이블 영역에 핵심 자산 비율 혹은 종합 위험도 등을 기입합니다.
