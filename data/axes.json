@@ -1,0 +1,6 @@
+[
+  { "axis": "risk",  "pos": "R", "neg": "S", "questions": ["q1","q2","q3"], "threshold": 8 },
+  { "axis": "info",  "pos": "D", "neg": "I", "questions": ["q4","q5"],       "threshold": 5 },
+  { "axis": "term",  "pos": "L", "neg": "T", "questions": ["q6","q7","q8"], "threshold": 8 },
+  { "axis": "asset", "pos": "G", "neg": "V", "questions": ["q9","q10"],      "threshold": 5 }
+]
