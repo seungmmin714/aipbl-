@@ -105,14 +105,17 @@ export default function ResultPage() {
       </header>
 
       {/* Main Content Canvas */}
-      <main ref={printRef} className="flex-grow flex flex-col items-center justify-center px-4 pt-24 pb-12 relative z-10 w-full max-w-md mx-auto bg-[#f4f5f9]">
+      <main className="flex-grow flex flex-col items-center justify-center pt-24 pb-12 relative z-10 w-full max-w-md mx-auto bg-[#f4f5f9]">
         
-        {/* Badge: 당신의 투자 MBTI는 */}
-        <div className="mb-2">
-          <span className="inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-[#e8edfc] text-[#004be6] tracking-wide">
-            당신의 투자 MBTI는
-          </span>
-        </div>
+        {/* Capture Area for Image Save */}
+        <div ref={printRef} className="w-full flex flex-col items-center bg-[#f4f5f9] px-4 pb-4 pt-4 -mt-4">
+          
+          {/* Badge: 당신의 투자 MBTI는 */}
+          <div className="mb-2">
+            <span className="inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-[#e8edfc] text-[#004be6] tracking-wide">
+              당신의 투자 MBTI는
+            </span>
+          </div>
 
         {/* MBTI Code */}
         <h1 className="font-black text-5xl md:text-6xl text-[#004be6] tracking-wider mb-6">
@@ -123,13 +126,12 @@ export default function ResultPage() {
         <div className="bg-white shadow-md w-full rounded-3xl p-6 flex flex-col items-center gap-4 relative overflow-hidden mb-4 border border-slate-100">
           {/* Circular Image Container */}
           <div className="relative w-56 h-56 rounded-full overflow-hidden bg-[#e0f2fe] flex items-center justify-center p-3 border border-sky-100/50 shadow-inner">
-            <Image
+            <img
               src={typeData.image}
               alt={typeData.nickname}
-              width={200}
-              height={200}
-              className="object-contain z-10"
-              priority
+              style={{ width: '200px', height: '200px', objectFit: 'contain' }}
+              className="z-10"
+              crossOrigin="anonymous"
             />
           </div>
 
@@ -268,9 +270,10 @@ export default function ResultPage() {
             </div>
           </div>
         </div>
+        </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col gap-3 w-full">
+        <div className="flex flex-col gap-3 w-full px-4 mt-2">
           {/* Side by side save & share */}
           <div className="flex gap-3 w-full">
             <button onClick={handleSaveImage} className="flex-1 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all text-sm">
