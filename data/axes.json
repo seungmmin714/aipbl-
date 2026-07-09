@@ -1,6 +1,6 @@
 [
-  { "axis": "risk",  "pos": "R", "neg": "S", "questions": ["q1","q2","q3"], "threshold": 8 },
-  { "axis": "info",  "pos": "D", "neg": "I", "questions": ["q4","q5"],       "threshold": 5 },
-  { "axis": "term",  "pos": "L", "neg": "T", "questions": ["q6","q7","q8"], "threshold": 8 },
-  { "axis": "asset", "pos": "G", "neg": "V", "questions": ["q9","q10"],      "threshold": 5 }
+  { "axis": "risk",  "pos": "R", "neg": "S", "questions": ["q1","q2","q3"], "label": "위험감수 vs 안정지향" },
+  { "axis": "info",  "pos": "D", "neg": "I", "questions": ["q4","q5","q6"], "label": "데이터기반 vs 직관기반" },
+  { "axis": "term",  "pos": "L", "neg": "T", "questions": ["q7","q8","q9"], "label": "장기투자 vs 단기매매" },
+  { "axis": "asset", "pos": "G", "neg": "V", "questions": ["q10","q11","q12"], "label": "성장자산 vs 가치·안전자산" }
 ]

@@ -53,7 +53,7 @@ export default function Home() {
             </h1>
             {/* Subtext */}
             <p className="font-body-md text-body-md md:text-[20px] md:leading-[32px] text-slate-500 max-w-xl mx-auto mt-stack-md">
-              10가지 문항에 답하고, 나에게 꼭 맞는 맞춤형 자산 배분 포트폴리오를 추천받아 보세요.
+              12가지 문항에 답하고, 나에게 꼭 맞는 맞춤형 자산 배분 포트폴리오를 추천받아 보세요.
             </p>
           </div>
 
@@ -107,7 +107,7 @@ export default function Home() {
             {/* Data Point Visual */}
             <div className="flex items-center gap-6 mt-8 p-6 bg-white/60 border border-slate-200/80 rounded-2xl backdrop-blur-md shadow-sm">
               <div className="flex flex-col items-center">
-                <span className="font-mbti-code text-mbti-code text-[#4d8eff]">10</span>
+                <span className="font-mbti-code text-mbti-code text-[#4d8eff]">12</span>
                 <span className="font-label-mono text-label-mono text-slate-400">Questions</span>
               </div>
               <div className="w-px h-12 bg-slate-200"></div>

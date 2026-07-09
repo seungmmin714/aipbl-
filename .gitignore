@@ -29,3 +29,10 @@ yarn-error.log*
 
 # temp commit messages
 commit_msg.txt
+
+# misc temp files
+tatus
+copy_images.bat
+
+# design reference originals (processed copies in public/)
+/design-reference/
