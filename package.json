@@ -6,17 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --test lib/mbti.test.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "next": "14.2.15",
     "recharts": "^2.12.7",
-    "html2canvas": "^1.4.1",
-    "lucide-react": "^0.453.0",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.4"
+    "html2canvas": "^1.4.1"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

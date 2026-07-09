@@ -1,64 +1,122 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { calculateMBTI, Answer } from "@/lib/mbti";
+import { calculateMBTI, InvalidAnswersError, Answer } from "@/lib/mbti";
 import questionsData from "@/data/questions.json";
+
+/** 전환 애니메이션 지속 시간(ms). CSS의 duration-200과 반드시 일치시킬 것. */
+const TRANSITION_MS = 200;
+const STORAGE_KEY = "invest-mbti:progress";
+
+interface SavedProgress {
+  currentIdx: number;
+  answers: Answer[];
+}
 
 export default function SurveyPage() {
   const router = useRouter();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [selectedValue, setSelectedValue] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [direction, setDirection] = useState<"next" | "prev">("next");
+  const [restored, setRestored] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const totalQuestions = questionsData.length;
   const q = questionsData[currentIdx];
 
-  // 이전에 선택한 답변 복원
+  // selectedValue는 answers에서 파생 — 별도 state로 두면 문항 전환 시 한 프레임 잔상이 남는다.
+  const selectedValue = answers.find((a) => a.questionId === q.id)?.value ?? null;
+
+  // 새로고침 대비: sessionStorage에서 진행 상황 복원 (마운트 시 1회)
   useEffect(() => {
-    const prev = answers.find((a) => a.questionId === q.id);
-    setSelectedValue(prev ? prev.value : null);
-  }, [currentIdx, q.id, answers]);
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const saved: SavedProgress = JSON.parse(raw);
+        const validIds = new Set(questionsData.map((x) => x.id));
+        const clean = (saved.answers ?? []).filter((a) => validIds.has(a.questionId));
+        setAnswers(clean);
+        setCurrentIdx(
+          Math.min(Math.max(saved.currentIdx ?? 0, 0), questionsData.length - 1)
+        );
+      }
+    } catch {
+      /* 손상된 저장값은 무시하고 처음부터 시작 */
+    }
+    setRestored(true);
+  }, []);
+
+  // 진행 상황 저장
+  useEffect(() => {
+    if (!restored) return;
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ currentIdx, answers }));
+    } catch {
+      /* 저장 실패는 치명적이지 않음 */
+    }
+  }, [currentIdx, answers, restored]);
+
+  // 언마운트 시 예약된 타이머 정리 (메모리 누수 · 유령 상태 갱신 방지)
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
 
   const saveAnswer = (value: string) => {
-    setSelectedValue(value);
-    setAnswers((prev) => {
-      const filtered = prev.filter((a) => a.questionId !== q.id);
-      return [...filtered, { questionId: q.id, value }];
-    });
+    if (isTransitioning) return;
+    setAnswers((prev) => [
+      ...prev.filter((a) => a.questionId !== q.id),
+      { questionId: q.id, value },
+    ]);
+  };
+
+  const move = (dir: "next" | "prev") => {
+    setDirection(dir);
+    setIsTransitioning(true);
+    timerRef.current = setTimeout(() => {
+      setCurrentIdx((prev) => prev + (dir === "next" ? 1 : -1));
+      setIsTransitioning(false);
+    }, TRANSITION_MS);
   };
 
   const handleNext = () => {
-    if (!selectedValue) return;
+    // isTransitioning 가드가 없으면 연타 시 currentIdx가 2 증가해
+    // 문항을 건너뛰거나(결과 25% 반전) 배열 범위를 넘어 크래시한다.
+    if (!selectedValue || isTransitioning) return;
 
     if (currentIdx < totalQuestions - 1) {
-      setDirection("next");
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentIdx((prev) => prev + 1);
-        setIsTransitioning(false);
-      }, 250);
-    } else {
-      // 마지막 문항 → 결과 계산
-      const finalAnswers = answers.filter((a) => a.questionId !== q.id);
-      finalAnswers.push({ questionId: q.id, value: selectedValue });
-      const code = calculateMBTI(finalAnswers);
+      move("next");
+      return;
+    }
+
+    // 마지막 문항 → 결과 계산
+    const finalAnswers: Answer[] = [
+      ...answers.filter((a) => a.questionId !== q.id),
+      { questionId: q.id, value: selectedValue },
+    ];
+
+    try {
+      const { code } = calculateMBTI(finalAnswers);
+      sessionStorage.removeItem(STORAGE_KEY);
       router.push(`/result/${code}`);
+    } catch (err) {
+      if (err instanceof InvalidAnswersError) {
+        // 여기 도달했다면 UI 가드가 뚫린 것 — 조용히 틀린 결과를 주느니 처음부터.
+        console.error("[survey] 응답 검증 실패:", err.message);
+        alert("응답에 문제가 있어 처음부터 다시 시작합니다.");
+        sessionStorage.removeItem(STORAGE_KEY);
+        setAnswers([]);
+        setCurrentIdx(0);
+        return;
+      }
+      throw err; // 예상치 못한 오류는 error.tsx가 받는다
     }
   };
 
   const handlePrev = () => {
-    if (currentIdx > 0) {
-      setDirection("prev");
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentIdx((prev) => prev - 1);
-        setIsTransitioning(false);
-      }, 250);
-    }
+    if (currentIdx > 0 && !isTransitioning) move("prev");
   };
 
   return (
@@ -67,12 +125,13 @@ export default function SurveyPage() {
       <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-white border-b border-slate-100/80 shadow-sm">
         <div className="flex items-center text-[#004be6] hover:opacity-80">
           <Link href="/">
-            <span className="material-symbols-outlined text-2xl font-light">account_circle</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-2xl font-light">account_circle</span>
+            <span className="sr-only">홈으로</span>
           </Link>
         </div>
-        <span className="font-extrabold text-[#004be6] text-xl tracking-tight">Invest-Type</span>
+        <span className="font-extrabold text-[#004be6] text-xl tracking-tight">Visionary Analyst</span>
         <div className="flex items-center text-[#004be6]">
-          <span className="material-symbols-outlined text-2xl font-light">help_outline</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-2xl font-light">help_outline</span>
         </div>
       </header>
 
@@ -93,7 +152,14 @@ export default function SurveyPage() {
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full h-2 bg-slate-200/60 rounded-full overflow-hidden relative">
+          <div
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={totalQuestions}
+            aria-valuenow={currentIdx + 1}
+            aria-label={`전체 ${totalQuestions}문항 중 ${currentIdx + 1}번째`}
+            className="w-full h-2 bg-slate-200/60 rounded-full overflow-hidden relative"
+          >
             <div
               className="h-full bg-gradient-to-r from-[#004be6] to-[#06b6d4] rounded-full transition-all duration-300 ease-out"
               style={{
@@ -105,7 +171,7 @@ export default function SurveyPage() {
 
         {/* Question Area (No Image) */}
         <div
-          className={`flex-grow flex flex-col justify-center my-6 transition-all duration-250 ${
+          className={`flex-grow flex flex-col justify-center my-6 transition-all duration-200 ${
             isTransitioning
               ? direction === "next"
                 ? "opacity-0 translate-x-8"
@@ -114,7 +180,7 @@ export default function SurveyPage() {
           }`}
         >
           {/* Question Text */}
-          <h2 className="text-xl md:text-2xl font-black text-slate-800 leading-snug text-left mb-2 break-keep">
+          <h2 aria-live="polite" className="text-xl md:text-2xl font-black text-slate-800 leading-snug text-left mb-2 break-keep">
             Q{currentIdx + 1}. {q.text}
           </h2>
           {/* Subtext instruction */}
@@ -123,12 +189,14 @@ export default function SurveyPage() {
           </p>
 
           {/* Binary Options */}
-          <div className="flex flex-col gap-3 w-full">
+          <div role="radiogroup" aria-label={q.text} className="flex flex-col gap-3 w-full">
             {q.options.map((opt, idx) => {
               const isSelected = selectedValue === opt.value;
               return (
                 <button
                   key={idx}
+                  role="radio"
+                  aria-checked={isSelected}
                   onClick={() => saveAnswer(opt.value)}
                   className={`rounded-2xl p-5 flex items-center justify-between text-left transition-all duration-200 border-2 w-full ${
                     isSelected
@@ -149,7 +217,7 @@ export default function SurveyPage() {
                   <div className="flex-shrink-0">
                     {isSelected ? (
                       <div className="w-6 h-6 bg-[#004be6] rounded-full flex items-center justify-center text-white shadow-inner">
-                        <span className="material-symbols-outlined text-[16px] font-bold">check</span>
+                        <span aria-hidden="true" className="material-symbols-outlined text-[16px] font-bold">check</span>
                       </div>
                     ) : (
                       <div className="w-6 h-6 border-2 border-slate-200 rounded-full"></div>
@@ -165,22 +233,22 @@ export default function SurveyPage() {
         <div className="flex gap-4 w-full mt-auto pt-4 border-t border-slate-100">
           <button
             onClick={handlePrev}
-            disabled={currentIdx === 0}
+            disabled={currentIdx === 0 || isTransitioning}
             className="w-[30%] py-4 bg-white border border-slate-200 text-slate-500 rounded-2xl font-bold flex items-center justify-center hover:bg-slate-50 transition-all text-sm disabled:opacity-30 disabled:pointer-events-none"
           >
             이전
           </button>
           <button
             onClick={handleNext}
-            disabled={!selectedValue}
+            disabled={!selectedValue || isTransitioning}
             className={`w-[70%] py-4 rounded-2xl font-bold flex items-center justify-center gap-1.5 transition-all text-sm ${
-              selectedValue
+              selectedValue && !isTransitioning
                 ? "bg-[#004be6] text-white hover:bg-[#003cb3] shadow-md"
                 : "bg-slate-200 text-slate-400 cursor-not-allowed"
             }`}
           >
             <span>{currentIdx === totalQuestions - 1 ? "결과 보기" : "다음"}</span>
-            <span className="material-symbols-outlined text-base">arrow_forward</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-base">arrow_forward</span>
           </button>
         </div>
 

@@ -70,3 +70,12 @@ body {
 .text-glow {
   text-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
 }
+
+/* animate-fade-in 유틸리티가 참조하던 키프레임 (정의 누락 수정) */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out both;
+}

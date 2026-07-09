@@ -1,11 +1,9 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useParams } from "next/navigation";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
-import html2canvas from "html2canvas";
 import mbtiTypes from "@/data/mbti-types.json";
 
 // 도넛 차트 컬러 팔레트 ( mock-up 색상 맞춤: Blue, Mint/Teal, Gold/Yellow, Slate/Gray )
@@ -15,13 +13,19 @@ export default function ResultPage() {
   const params = useParams();
   const code = (params?.code as string)?.toUpperCase() || "";
   const printRef = useRef<HTMLDivElement>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // 이미지를 base64 Data URL로 변환하는 헬퍼
   const imgToBase64 = (imgEl: HTMLImageElement): Promise<string> => {
     return new Promise((resolve) => {
+      // 로드가 끝나지 않은 이미지는 naturalWidth가 0 → 빈 캔버스가 저장된다.
+      if (!imgEl.complete || imgEl.naturalWidth === 0) {
+        resolve(imgEl.src);
+        return;
+      }
       const cvs = document.createElement("canvas");
-      cvs.width = imgEl.naturalWidth || imgEl.width;
-      cvs.height = imgEl.naturalHeight || imgEl.height;
+      cvs.width = imgEl.naturalWidth;
+      cvs.height = imgEl.naturalHeight;
       const ctx = cvs.getContext("2d");
       if (ctx) {
         ctx.drawImage(imgEl, 0, 0, cvs.width, cvs.height);
@@ -33,42 +37,47 @@ export default function ResultPage() {
   };
 
   const handleSaveImage = useCallback(async () => {
-    if (!printRef.current) return;
+    if (!printRef.current || isSaving) return;
+    setIsSaving(true);
+    const origSrcs: string[] = [];
+    let imgs: HTMLImageElement[] = [];
     try {
+      // html2canvas(약 200KB)는 저장 버튼을 누른 시점에만 내려받는다.
+      const { default: html2canvas } = await import("html2canvas");
       // 1. 캡처 영역 내 모든 <img>를 base64로 치환 (html2canvas CORS 회피)
-      const imgs = printRef.current.querySelectorAll("img");
-      const origSrcs: string[] = [];
-      for (const img of Array.from(imgs)) {
+      imgs = Array.from(printRef.current.querySelectorAll("img"));
+      for (const img of imgs) {
         origSrcs.push(img.src);
-        try {
-          const b64 = await imgToBase64(img);
-          img.src = b64;
-        } catch { /* 변환 실패 시 원본 유지 */ }
+        const b64 = await imgToBase64(img);
+        img.src = b64;
       }
 
       // 2. html2canvas 캡처
+      //    allowTaint:true 는 캔버스를 오염시켜 toDataURL()이 SecurityError를 던지게 한다.
+      //    이미 base64로 치환했으므로 useCORS만으로 충분하다.
       const canvas = await html2canvas(printRef.current, {
         scale: 2,
         useCORS: true,
-        allowTaint: true,
         backgroundColor: "#f4f5f9",
         logging: false,
       });
 
-      // 3. 원본 src 복원
-      Array.from(imgs).forEach((img, i) => {
-        img.src = origSrcs[i];
-      });
-
-      // 4. 다운로드
+      // 3. 다운로드
       const link = document.createElement("a");
       link.download = `investment-mbti-${code}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     } catch (err) {
       console.error("이미지 저장 실패", err);
+      alert("이미지 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      // 4. 실패하더라도 원본 src는 반드시 복원
+      imgs.forEach((img, i) => {
+        if (origSrcs[i]) img.src = origSrcs[i];
+      });
+      setIsSaving(false);
     }
-  }, [code]);
+  }, [code, isSaving]);
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -79,11 +88,18 @@ export default function ResultPage() {
       try {
         await navigator.share({ title, text, url });
       } catch (err) {
-        console.error("공유 실패", err);
+        // 사용자가 공유 시트를 닫은 경우(AbortError)는 오류가 아니다.
+        if ((err as Error)?.name !== "AbortError") console.error("공유 실패", err);
       }
-    } else {
+      return;
+    }
+
+    try {
       await navigator.clipboard.writeText(url);
       alert("결과 링크가 클립보드에 복사되었습니다.");
+    } catch {
+      // 권한 거부·비보안 컨텍스트 폴백
+      window.prompt("아래 링크를 복사해 주세요.", url);
     }
   };
 
@@ -94,7 +110,7 @@ export default function ResultPage() {
   if (!typeData) {
     return (
       <div className="min-h-screen bg-[#f4f5f9] flex flex-col items-center justify-center px-6 text-center">
-        <span className="material-symbols-outlined text-6xl text-slate-300 mb-4">
+        <span aria-hidden="true" className="material-symbols-outlined text-6xl text-slate-300 mb-4">
           error_outline
         </span>
         <h1 className="font-headline-lg text-headline-lg text-slate-800 mb-2">
@@ -118,10 +134,11 @@ export default function ResultPage() {
   // 2.데이터기반 (Right)
   // 3.장기투자 (Bottom)
   // 4.성장자산 (Left)
-  const isR = typeData.code.includes("R");
-  const isD = typeData.code.includes("D");
-  const isL = typeData.code.includes("L");
-  const isG = typeData.code.includes("G");
+  // includes()는 위치를 무시한다. 축을 추가하면 조용히 깨지므로 인덱스로 접근한다.
+  const isR = typeData.code[0] === "R";
+  const isD = typeData.code[1] === "D";
+  const isL = typeData.code[2] === "L";
+  const isG = typeData.code[3] === "G";
 
   const yTop = isR ? 35 : 75;       // 위험감수 (y값 작을수록 위)
   const xRight = isD ? 165 : 125;   // 데이터기반 (x값 클수록 오른쪽)
@@ -136,12 +153,12 @@ export default function ResultPage() {
       <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-white border-b border-slate-100/80 shadow-sm">
         <div className="flex items-center text-[#004be6] hover:opacity-80">
           <Link href="/">
-            <span className="material-symbols-outlined text-2xl font-light">account_circle</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-2xl font-light">account_circle</span>
           </Link>
         </div>
-        <span className="font-extrabold text-[#004be6] text-xl tracking-tight">Invest-Type</span>
+        <span className="font-extrabold text-[#004be6] text-xl tracking-tight">Visionary Analyst</span>
         <div className="flex items-center text-[#004be6]">
-          <span className="material-symbols-outlined text-2xl font-light">help_outline</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-2xl font-light">help_outline</span>
         </div>
       </header>
 
@@ -172,7 +189,6 @@ export default function ResultPage() {
               alt={typeData.nickname}
               style={{ width: '200px', height: '200px', objectFit: 'contain' }}
               className="z-10"
-              crossOrigin="anonymous"
             />
           </div>
 
@@ -193,14 +209,14 @@ export default function ResultPage() {
         {/* Card 2: 성향 분석 (Radar Chart) */}
         <div className="bg-white shadow-md w-full rounded-3xl p-6 flex flex-col gap-4 border border-slate-100 mb-4">
           <div className="flex items-center gap-2 text-slate-800 font-bold text-base border-b border-slate-50 pb-3">
-            <span className="material-symbols-outlined text-lg text-slate-400">signal_cellular_alt</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-lg text-slate-400">signal_cellular_alt</span>
             <h3>성향 분석</h3>
           </div>
 
           {/* SVG Custom Radar Chart */}
           <div className="flex items-center justify-center py-2">
             <div className="relative w-60 h-60 flex items-center justify-center">
-              <svg className="w-full h-full overflow-visible" viewBox="-40 0 280 200">
+              <svg role="img" aria-label={`${typeData.nickname}의 4축 성향 그래프`} className="w-full h-full overflow-visible" viewBox="-40 0 280 200">
                 {/* Concentric Grid Diamonds */}
                 <polygon points="100,30 170,100 100,170 30,100" fill="none" stroke="#f1f3f9" strokeWidth="1.5" />
                 <polygon points="100,55 145,100 100,145 55,100" fill="none" stroke="#f8f9fc" strokeWidth="1.5" />
@@ -237,7 +253,7 @@ export default function ResultPage() {
         {/* Card 3: 성격적 특징 (Detailed traits list) */}
         <div className="bg-white shadow-md w-full rounded-3xl p-6 flex flex-col gap-4 border border-slate-100 mb-4 animate-fade-in">
           <div className="flex items-center gap-2 text-slate-800 font-bold text-base border-b border-slate-50 pb-3">
-            <span className="material-symbols-outlined text-lg text-slate-400">subject</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-lg text-slate-400">subject</span>
             <h3>성격적 특징</h3>
           </div>
           <ul className="flex flex-col gap-3">
@@ -253,7 +269,7 @@ export default function ResultPage() {
         {/* Card 4: 추천 자산배분 (Donut Chart) */}
         <div className="bg-white shadow-md w-full rounded-3xl p-6 flex flex-col gap-4 border border-slate-100 mb-6">
           <div className="flex items-center gap-2 text-slate-800 font-bold text-base border-b border-slate-50 pb-3">
-            <span className="material-symbols-outlined text-lg text-slate-400">pie_chart</span>
+            <span aria-hidden="true" className="material-symbols-outlined text-lg text-slate-400">pie_chart</span>
             <h3>추천 자산배분</h3>
           </div>
 
@@ -317,12 +333,12 @@ export default function ResultPage() {
         <div className="flex flex-col gap-3 w-full px-4 mt-2">
           {/* Side by side save & share */}
           <div className="flex gap-3 w-full">
-            <button onClick={handleSaveImage} className="flex-1 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all text-sm">
-              <span className="material-symbols-outlined text-lg">download</span>
-              이미지 저장
+            <button onClick={handleSaveImage} disabled={isSaving} className="flex-1 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all text-sm disabled:opacity-50">
+              <span aria-hidden="true" className="material-symbols-outlined text-lg">download</span>
+              {isSaving ? "저장 중…" : "이미지 저장"}
             </button>
             <button onClick={handleShare} className="flex-1 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all text-sm">
-              <span className="material-symbols-outlined text-lg">share</span>
+              <span aria-hidden="true" className="material-symbols-outlined text-lg">share</span>
               공유하기
             </button>
           </div>
@@ -334,6 +350,13 @@ export default function ResultPage() {
           >
             다시 진단하기
           </Link>
+
+          {/* 투자 자문 오인 방지 */}
+          <p className="text-[11px] leading-relaxed text-slate-400 text-center px-2 mt-2 break-keep">
+            본 결과는 교육·오락 목적의 참고 자료이며 투자 자문이 아닙니다.
+            제시된 자산 배분은 특정 상품의 매수·매도 권유가 아니며,
+            투자 판단과 그 결과는 이용자 본인에게 귀속됩니다.
+          </p>
         </div>
       </main>
     </div>

@@ -3,20 +3,29 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { isValidMBTICode, TOTAL_QUESTIONS } from "@/lib/mbti";
 
 export default function Home() {
   const [searchCode, setSearchCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchCode.trim()) return;
-    
-    // 코드를 대문자로 정리하여 이동
-    const formattedCode = searchCode.trim().toUpperCase();
-    
-    // 라우팅 이동
-    router.push(`/result/${formattedCode}`);
+    const code = searchCode.trim().toUpperCase();
+
+    if (!code) {
+      setError("결과 코드를 입력해 주세요.");
+      return;
+    }
+    // 잘못된 코드는 결과 페이지로 보내지 말고 입력 시점에 막는다.
+    if (!isValidMBTICode(code)) {
+      setError("올바른 코드가 아닙니다. 4자리 코드를 입력해 주세요. (예: RDLG)");
+      return;
+    }
+
+    setError(null);
+    router.push(`/result/${code}`);
   };
 
   return (
@@ -60,7 +69,7 @@ export default function Home() {
           {/* Action Area */}
           <div className="flex flex-col items-center gap-4 mt-stack-md">
             <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#e6fcf5] rounded-full text-xs md:text-sm font-semibold text-[#099268] border border-[#c3fae8]/80 shadow-sm">
-              <span>⏱️ 약 1분 · 12문항</span>
+              <span>⏱️ 약 3분 · {TOTAL_QUESTIONS}문항</span>
             </div>
             <Link
               href="/survey"
@@ -79,17 +88,25 @@ export default function Home() {
                 <div className="h-px bg-slate-200 flex-grow"></div>
               </div>
 
-              <form onSubmit={handleSearch} className="flex w-full gap-2">
+              <form onSubmit={handleSearch} noValidate className="flex w-full flex-col gap-2">
+                <div className="flex w-full gap-2">
                 <div className="relative flex-grow">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">
+                  <span aria-hidden="true" className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">
                     search
                   </span>
                   <input
                     className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-slate-800 font-body-md focus:outline-none focus:border-indigo-500 transition-colors"
                     placeholder="결과 코드 입력 (예: RDLG)"
                     type="text"
+                    maxLength={4}
+                    aria-label="투자 MBTI 결과 코드"
+                    aria-invalid={!!error}
+                    aria-describedby={error ? "search-error" : undefined}
                     value={searchCode}
-                    onChange={(e) => setSearchCode(e.target.value)}
+                    onChange={(e) => {
+                      setSearchCode(e.target.value);
+                      if (error) setError(null);
+                    }}
                   />
                 </div>
                 <button
@@ -98,6 +115,12 @@ export default function Home() {
                 >
                   조회
                 </button>
+                </div>
+                {error && (
+                  <p id="search-error" role="alert" className="text-xs font-semibold text-rose-500 text-left px-1">
+                    {error}
+                  </p>
+                )}
               </form>
 
 
@@ -106,7 +129,7 @@ export default function Home() {
             {/* Data Point Visual */}
             <div className="flex items-center gap-6 mt-8 p-6 bg-white/60 border border-slate-200/80 rounded-2xl backdrop-blur-md shadow-sm">
               <div className="flex flex-col items-center">
-                <span className="font-mbti-code text-mbti-code text-[#4d8eff]">12</span>
+                <span className="font-mbti-code text-mbti-code text-[#4d8eff]">{TOTAL_QUESTIONS}</span>
                 <span className="font-label-mono text-label-mono text-slate-400">Questions</span>
               </div>
               <div className="w-px h-12 bg-slate-200"></div>
@@ -129,19 +152,12 @@ export default function Home() {
         <div className="font-headline-lg-mobile text-headline-lg-mobile font-bold text-indigo-600">
           Visionary Analyst
         </div>
-        <nav className="flex gap-6">
-          <a className="font-label-mono text-label-mono text-slate-400 hover:text-cyan-500 transition-colors" href="#">
-            About
-          </a>
-          <a className="font-label-mono text-label-mono text-slate-400 hover:text-cyan-500 transition-colors" href="#">
-            Methodology
-          </a>
-          <a className="font-label-mono text-label-mono text-slate-400 hover:text-cyan-500 transition-colors" href="#">
-            Privacy Policy
-          </a>
-        </nav>
+        <p className="font-label-mono text-label-mono text-slate-400 max-w-md text-center md:text-left">
+          본 서비스는 교육·오락 목적의 참고 자료이며 투자 자문이 아닙니다.
+          투자 판단과 그 결과는 이용자 본인에게 귀속됩니다.
+        </p>
         <div className="font-label-mono text-label-mono text-slate-400">
-          © 2024 Visionary Analyst Asset Management
+          © {new Date().getFullYear()} Visionary Analyst
         </div>
       </footer>
     </div>
