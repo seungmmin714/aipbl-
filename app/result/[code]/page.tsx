@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
@@ -14,12 +14,53 @@ const CHART_COLORS = ["#004be6", "#06b6d4", "#a16207", "#cbd5e1", "#6366f1", "#f
 export default function ResultPage() {
   const params = useParams();
   const code = (params?.code as string)?.toUpperCase() || "";
-  const printRef = useRef<HTMLElement>(null);
+  const printRef = useRef<HTMLDivElement>(null);
 
-  const handleSaveImage = async () => {
+  // 이미지를 base64 Data URL로 변환하는 헬퍼
+  const imgToBase64 = (imgEl: HTMLImageElement): Promise<string> => {
+    return new Promise((resolve) => {
+      const cvs = document.createElement("canvas");
+      cvs.width = imgEl.naturalWidth || imgEl.width;
+      cvs.height = imgEl.naturalHeight || imgEl.height;
+      const ctx = cvs.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(imgEl, 0, 0, cvs.width, cvs.height);
+        resolve(cvs.toDataURL("image/png"));
+      } else {
+        resolve(imgEl.src);
+      }
+    });
+  };
+
+  const handleSaveImage = useCallback(async () => {
     if (!printRef.current) return;
     try {
-      const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true, backgroundColor: "#f4f5f9" });
+      // 1. 캡처 영역 내 모든 <img>를 base64로 치환 (html2canvas CORS 회피)
+      const imgs = printRef.current.querySelectorAll("img");
+      const origSrcs: string[] = [];
+      for (const img of Array.from(imgs)) {
+        origSrcs.push(img.src);
+        try {
+          const b64 = await imgToBase64(img);
+          img.src = b64;
+        } catch { /* 변환 실패 시 원본 유지 */ }
+      }
+
+      // 2. html2canvas 캡처
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: "#f4f5f9",
+        logging: false,
+      });
+
+      // 3. 원본 src 복원
+      Array.from(imgs).forEach((img, i) => {
+        img.src = origSrcs[i];
+      });
+
+      // 4. 다운로드
       const link = document.createElement("a");
       link.download = `investment-mbti-${code}.png`;
       link.href = canvas.toDataURL("image/png");
@@ -27,7 +68,7 @@ export default function ResultPage() {
     } catch (err) {
       console.error("이미지 저장 실패", err);
     }
-  };
+  }, [code]);
 
   const handleShare = async () => {
     const url = window.location.href;
