@@ -124,7 +124,7 @@ export default function ResultPage() {
           {/* SVG Custom Radar Chart */}
           <div className="flex items-center justify-center py-2">
             <div className="relative w-60 h-60 flex items-center justify-center">
-              <svg className="w-full h-full" viewBox="0 0 200 200">
+              <svg className="w-full h-full overflow-visible" viewBox="-40 0 280 200">
                 {/* Concentric Grid Diamonds */}
                 <polygon points="100,30 170,100 100,170 30,100" fill="none" stroke="#f1f3f9" strokeWidth="1.5" />
                 <polygon points="100,55 145,100 100,145 55,100" fill="none" stroke="#f8f9fc" strokeWidth="1.5" />
