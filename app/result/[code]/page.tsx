@@ -40,14 +40,19 @@ export default function ResultPage() {
   }
 
   // 4축 코드 분해를 이용해 방사형 차트 좌표 계산
-  // Top: 수익성(R), Right: 성(G), Bottom: 안정성(S), Left: 크(V)
+  // 1.위험감수 (Top)
+  // 2.데이터기반 (Right)
+  // 3.장기투자 (Bottom)
+  // 4.성장자산 (Left)
   const isR = typeData.code.includes("R");
+  const isD = typeData.code.includes("D");
+  const isL = typeData.code.includes("L");
   const isG = typeData.code.includes("G");
 
-  const yTop = isR ? 35 : 75;       // Risk-taking 이면 수익성(Top) 축에 높게 분포 (y값이 작을수록 위)
-  const xRight = isG ? 165 : 125;   // Growth 면 성(Right) 축에 높게 분포 (x값이 클수록 오른쪽)
-  const yBottom = !isR ? 165 : 125;  // Stable 이면 안정성(Bottom) 축에 높게 분포 (y값이 클수록 아래)
-  const xLeft = !isG ? 35 : 75;     // Value 면 크(Left) 축에 높게 분포 (x값이 작을수록 왼쪽)
+  const yTop = isR ? 35 : 75;       // 위험감수 (y값 작을수록 위)
+  const xRight = isD ? 165 : 125;   // 데이터기반 (x값 클수록 오른쪽)
+  const yBottom = isL ? 165 : 125;  // 장기투자 (y값 클수록 아래)
+  const xLeft = isG ? 35 : 75;      // 성장자산 (x값 작을수록 왼쪽)
 
   const pointsStr = `100,${yTop} ${xRight},100 100,${yBottom} ${xLeft},100`;
 
@@ -144,16 +149,32 @@ export default function ResultPage() {
                 <circle cx={xLeft} cy="100" r="3" fill="#004be6" />
                 
                 {/* Grid Labels */}
-                <text x="100" y="20" textAnchor="middle" className="text-[11px] font-bold fill-slate-500">수익성</text>
-                <text x="180" y="104" textAnchor="start" className="text-[11px] font-bold fill-slate-500">성</text>
-                <text x="100" y="185" textAnchor="middle" className="text-[11px] font-bold fill-slate-500">안정성</text>
-                <text x="20" y="104" textAnchor="end" className="text-[11px] font-bold fill-slate-500">크</text>
+                <text x="100" y="20" textAnchor="middle" className="text-[11px] font-bold fill-slate-500">위험감수</text>
+                <text x="180" y="104" textAnchor="start" className="text-[11px] font-bold fill-slate-500">데이터기반</text>
+                <text x="100" y="185" textAnchor="middle" className="text-[11px] font-bold fill-slate-500">장기투자</text>
+                <text x="20" y="104" textAnchor="end" className="text-[11px] font-bold fill-slate-500">성장자산</text>
               </svg>
             </div>
           </div>
         </div>
 
-        {/* Card 3: 추천 자산배분 (Donut Chart) */}
+        {/* Card 3: 성격적 특징 (Detailed traits list) */}
+        <div className="bg-white shadow-md w-full rounded-3xl p-6 flex flex-col gap-4 border border-slate-100 mb-4 animate-fade-in">
+          <div className="flex items-center gap-2 text-slate-800 font-bold text-base border-b border-slate-50 pb-3">
+            <span className="material-symbols-outlined text-lg text-slate-400">subject</span>
+            <h3>성격적 특징</h3>
+          </div>
+          <ul className="flex flex-col gap-3">
+            {typeData.features?.map((feat, idx) => (
+              <li key={idx} className="flex gap-2.5 text-sm text-slate-600 leading-relaxed break-keep text-left">
+                <span className="text-[#004be6] mt-0.5 flex-shrink-0 font-bold">•</span>
+                <span>{feat}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Card 4: 추천 자산배분 (Donut Chart) */}
         <div className="bg-white shadow-md w-full rounded-3xl p-6 flex flex-col gap-4 border border-slate-100 mb-6">
           <div className="flex items-center gap-2 text-slate-800 font-bold text-base border-b border-slate-50 pb-3">
             <span className="material-symbols-outlined text-lg text-slate-400">pie_chart</span>
