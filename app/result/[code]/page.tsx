@@ -6,16 +6,8 @@ import { useParams } from "next/navigation";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import mbtiTypes from "@/data/mbti-types.json";
 
-// 도넛 차트 컬러 팔레트
-const CHART_COLORS = ["#6366F1", "#ddb7ff", "#06B6D4", "#ffb786", "#34d399", "#f472b6"];
-
-// 축별 라벨 매핑
-const axisDisplayMap: Record<string, { left: string; right: string; icon: string }> = {
-  R: { left: "위험감수(R)", right: "안정지향(S)", icon: "security" },
-  D: { left: "데이터(D)", right: "직관(I)", icon: "search" },
-  L: { left: "장기투자(L)", right: "단기매매(T)", icon: "schedule" },
-  G: { left: "성장자산(G)", right: "가치자산(V)", icon: "account_balance" },
-};
+// 도넛 차트 컬러 팔레트 ( mock-up 색상 맞춤: Blue, Mint/Teal, Gold/Yellow, Slate/Gray )
+const CHART_COLORS = ["#004be6", "#06b6d4", "#a16207", "#cbd5e1", "#6366f1", "#f472b6"];
 
 export default function ResultPage() {
   const params = useParams();
@@ -39,7 +31,7 @@ export default function ResultPage() {
         </p>
         <Link
           href="/"
-          className="glow-button bg-[#585cf4] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#4c50e0] transition-all"
+          className="bg-[#004be6] text-white px-8 py-3 rounded-xl font-semibold hover:bg-[#003cb3] transition-all"
         >
           홈으로 돌아가기
         </Link>
@@ -47,239 +39,202 @@ export default function ResultPage() {
     );
   }
 
-  // 축 코드 분해
-  const axes = [
-    { code: typeData.code[0], axis: "R" },
-    { code: typeData.code[1], axis: "D" },
-    { code: typeData.code[2], axis: "L" },
-    { code: typeData.code[3], axis: "G" },
-  ];
+  // 4축 코드 분해를 이용해 방사형 차트 좌표 계산
+  // Top: 수익성(R), Right: 성(G), Bottom: 안정성(S), Left: 크(V)
+  const isR = typeData.code.includes("R");
+  const isG = typeData.code.includes("G");
+
+  const yTop = isR ? 35 : 75;       // Risk-taking 이면 수익성(Top) 축에 높게 분포 (y값이 작을수록 위)
+  const xRight = isG ? 165 : 125;   // Growth 면 성(Right) 축에 높게 분포 (x값이 클수록 오른쪽)
+  const yBottom = !isR ? 165 : 125;  // Stable 이면 안정성(Bottom) 축에 높게 분포 (y값이 클수록 아래)
+  const xLeft = !isG ? 35 : 75;     // Value 면 크(Left) 축에 높게 분포 (x값이 작을수록 왼쪽)
+
+  const pointsStr = `100,${yTop} ${xRight},100 100,${yBottom} ${xLeft},100`;
 
   return (
     <div className="min-h-screen bg-[#f4f5f9] text-[#001a42] flex flex-col font-body-md relative overflow-x-hidden">
-      {/* Ambient Background */}
-      <div className="tech-bg"></div>
-
-      {/* Top Header */}
-      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-gutter h-16 bg-white/70 backdrop-blur-xl border-b border-slate-200/50">
-        <Link
-          href="/"
-          className="font-headline-lg-mobile text-headline-lg-mobile font-bold text-indigo-600"
-        >
-          Visionary Analyst
-        </Link>
-        <div className="flex items-center">
-          <button className="p-2 rounded-full hover:bg-slate-100 transition-colors text-indigo-600">
-            <span className="material-symbols-outlined">account_circle</span>
-          </button>
+      {/* Top Header App Bar */}
+      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-white border-b border-slate-100/80 shadow-sm">
+        <div className="flex items-center text-[#004be6] hover:opacity-80">
+          <Link href="/">
+            <span className="material-symbols-outlined text-2xl font-light">account_circle</span>
+          </Link>
+        </div>
+        <span className="font-extrabold text-[#004be6] text-xl tracking-tight">Invest-Type</span>
+        <div className="flex items-center text-[#004be6]">
+          <span className="material-symbols-outlined text-2xl font-light">help_outline</span>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-grow flex flex-col items-center p-gutter pt-24 pb-32 relative z-10 w-full max-w-lg mx-auto">
-        {/* Result Card */}
-        <div className="bg-white border border-slate-200/80 shadow-lg w-full rounded-2xl overflow-hidden mb-8">
-          {/* Animal Image Hero */}
-          <div className="relative w-full aspect-square bg-gradient-to-b from-indigo-50 to-white flex items-center justify-center overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(99,102,241,0.08),transparent_70%)]"></div>
+      {/* Main Content Canvas */}
+      <main className="flex-grow flex flex-col items-center justify-center px-4 pt-24 pb-12 relative z-10 w-full max-w-md mx-auto">
+        
+        {/* Badge: 당신의 투자 MBTI는 */}
+        <div className="mb-2">
+          <span className="inline-block px-4 py-1.5 rounded-full text-xs font-bold bg-[#e8edfc] text-[#004be6] tracking-wide">
+            당신의 투자 MBTI는
+          </span>
+        </div>
+
+        {/* MBTI Code */}
+        <h1 className="font-black text-5xl md:text-6xl text-[#004be6] tracking-wider mb-6">
+          {typeData.code}
+        </h1>
+
+        {/* Card 1: Main Animal Card */}
+        <div className="bg-white shadow-md w-full rounded-3xl p-6 flex flex-col items-center gap-4 relative overflow-hidden mb-4 border border-slate-100">
+          {/* Circular Image Container */}
+          <div className="relative w-56 h-56 rounded-full overflow-hidden bg-[#e0f2fe] flex items-center justify-center p-3 border border-sky-100/50 shadow-inner">
             <Image
               src={typeData.image}
               alt={typeData.nickname}
-              width={360}
-              height={360}
-              className="object-contain z-10 drop-shadow-lg"
+              width={200}
+              height={200}
+              className="object-contain z-10"
               priority
             />
           </div>
 
-          {/* Content Section */}
-          <div className="p-6 flex flex-col gap-6">
-            {/* Header: Code + Nickname */}
-            <div className="text-center flex flex-col items-center gap-2">
-              <span className="text-5xl">{typeData.emoji}</span>
-              <span className="font-mbti-code text-mbti-code text-indigo-600 tracking-widest drop-shadow-[0_0_10px_rgba(99,102,241,0.2)]">
-                {typeData.code}
-              </span>
-              <h1 className="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-slate-800 font-bold">
-                {typeData.nickname}
-              </h1>
-            </div>
+          {/* Nickname & Emoji */}
+          <div className="text-center mt-2">
+            <h2 className="text-2xl font-black text-slate-800 flex items-center justify-center gap-1.5">
+              <span>{typeData.nickname}</span>
+              <span className="text-3xl">{typeData.emoji}</span>
+            </h2>
+          </div>
 
-            {/* Trait Tags */}
-            <div className="flex flex-wrap justify-center gap-2">
-              {typeData.traits.map((trait, idx) => (
-                <span
-                  key={idx}
-                  className="px-3 py-1.5 rounded-full text-xs font-medium border border-indigo-200/60 bg-indigo-50 text-indigo-600 font-label-mono"
-                >
-                  {trait}
+          {/* Summary description paragraph */}
+          <p className="text-slate-600 text-sm text-center leading-relaxed max-w-[310px] mt-1 break-keep">
+            {typeData.desc}
+          </p>
+        </div>
+
+        {/* Card 2: 성향 분석 (Radar Chart) */}
+        <div className="bg-white shadow-md w-full rounded-3xl p-6 flex flex-col gap-4 border border-slate-100 mb-4">
+          <div className="flex items-center gap-2 text-slate-800 font-bold text-base border-b border-slate-50 pb-3">
+            <span className="material-symbols-outlined text-lg text-slate-400">signal_cellular_alt</span>
+            <h3>성향 분석</h3>
+          </div>
+
+          {/* SVG Custom Radar Chart */}
+          <div className="flex items-center justify-center py-2">
+            <div className="relative w-60 h-60 flex items-center justify-center">
+              <svg className="w-full h-full" viewBox="0 0 200 200">
+                {/* Concentric Grid Diamonds */}
+                <polygon points="100,30 170,100 100,170 30,100" fill="none" stroke="#f1f3f9" strokeWidth="1.5" />
+                <polygon points="100,55 145,100 100,145 55,100" fill="none" stroke="#f8f9fc" strokeWidth="1.5" />
+                <polygon points="100,80 120,100 100,120 80,100" fill="none" stroke="#f8f9fc" strokeWidth="1" />
+                
+                {/* Axes Lines */}
+                <line x1="100" y1="30" x2="100" y2="170" stroke="#e9ecef" strokeWidth="1" strokeDasharray="3,3" />
+                <line x1="30" y1="100" x2="170" y2="100" stroke="#e9ecef" strokeWidth="1" strokeDasharray="3,3" />
+                
+                {/* Data Area Polygon */}
+                <polygon
+                  points={pointsStr}
+                  fill="rgba(0, 75, 230, 0.08)"
+                  stroke="#004be6"
+                  strokeWidth="2.5"
+                />
+
+                {/* Corners Markers */}
+                <circle cx="100" cy={yTop} r="3" fill="#004be6" />
+                <circle cx={xRight} cy="100" r="3" fill="#004be6" />
+                <circle cx="100" cy={yBottom} r="3" fill="#004be6" />
+                <circle cx={xLeft} cy="100" r="3" fill="#004be6" />
+                
+                {/* Grid Labels */}
+                <text x="100" y="20" textAnchor="middle" className="text-[11px] font-bold fill-slate-500">수익성</text>
+                <text x="180" y="104" textAnchor="start" className="text-[11px] font-bold fill-slate-500">성</text>
+                <text x="100" y="185" textAnchor="middle" className="text-[11px] font-bold fill-slate-500">안정성</text>
+                <text x="20" y="104" textAnchor="end" className="text-[11px] font-bold fill-slate-500">크</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: 추천 자산배분 (Donut Chart) */}
+        <div className="bg-white shadow-md w-full rounded-3xl p-6 flex flex-col gap-4 border border-slate-100 mb-6">
+          <div className="flex items-center gap-2 text-slate-800 font-bold text-base border-b border-slate-50 pb-3">
+            <span className="material-symbols-outlined text-lg text-slate-400">pie_chart</span>
+            <h3>추천 자산배분</h3>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 py-2">
+            {/* Recharts Donut Chart */}
+            <div className="relative w-36 h-36 flex-shrink-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={typeData.allocation}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={36}
+                    outerRadius={56}
+                    dataKey="value"
+                    strokeWidth={2}
+                    stroke="#fff"
+                    paddingAngle={2}
+                  >
+                    {typeData.allocation.map((_, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              
+              {/* Center Donut Label */}
+              <div className="absolute inset-0 flex items-center justify-center flex-col">
+                <span className="text-[10px] text-slate-400 font-medium">Risk</span>
+                <span className="text-xl text-[#004be6] font-extrabold leading-none mt-0.5">
+                  {typeData.riskScore?.toFixed(1) || "5.0"}
                 </span>
-              ))}
+              </div>
             </div>
 
-            {/* Divider */}
-            <div className="w-full h-px bg-slate-200/60"></div>
-
-            {/* Axis Profile */}
-            <div className="flex flex-col gap-3">
-              <h2 className="font-label-mono text-xs text-slate-400 uppercase tracking-widest">
-                Strategy Profile
-              </h2>
-              <div className="grid grid-cols-1 gap-2">
-                {axes.map((a, idx) => {
-                  const display = axisDisplayMap[a.axis];
-                  const isLeft = a.code === a.axis;
-                  return (
+            {/* Allocation Legend */}
+            <div className="flex flex-col gap-2 w-full max-w-[150px] pr-2">
+              {typeData.allocation.map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between gap-1 w-full text-xs font-semibold">
+                  <div className="flex items-center gap-1.5 overflow-hidden">
                     <div
-                      key={idx}
-                      className="flex items-center gap-3 py-2 px-3 rounded-xl bg-slate-50"
-                    >
-                      <span className="material-symbols-outlined text-sm text-slate-400">
-                        {display.icon}
-                      </span>
-                      <div className="flex-grow flex items-center gap-2">
-                        <span
-                          className={`text-xs font-medium px-2 py-0.5 rounded ${
-                            isLeft
-                              ? "bg-indigo-100 text-indigo-600"
-                              : "text-slate-400"
-                          }`}
-                        >
-                          {display.left}
-                        </span>
-                        <div className="flex-grow h-1.5 rounded-full bg-slate-200 relative overflow-hidden">
-                          <div
-                            className={`absolute top-0 h-full rounded-full transition-all ${
-                              isLeft
-                                ? "left-0 bg-indigo-500"
-                                : "right-0 bg-cyan-400"
-                            }`}
-                            style={{ width: "66%" }}
-                          ></div>
-                        </div>
-                        <span
-                          className={`text-xs font-medium px-2 py-0.5 rounded ${
-                            !isLeft
-                              ? "bg-cyan-100 text-cyan-600"
-                              : "text-slate-400"
-                          }`}
-                        >
-                          {display.right}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="w-full h-px bg-slate-200/60"></div>
-
-            {/* Description */}
-            <div className="flex flex-col gap-3">
-              <h2 className="font-label-mono text-xs text-slate-400 uppercase tracking-widest">
-                Personality
-              </h2>
-              <ul className="flex flex-col gap-2.5">
-                {typeData.desc.map((line, idx) => (
-                  <li key={idx} className="flex gap-2.5 text-sm text-slate-600 leading-relaxed">
-                    <span className="text-indigo-400 mt-0.5 flex-shrink-0">•</span>
-                    <span>{line}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Divider */}
-            <div className="w-full h-px bg-slate-200/60"></div>
-
-            {/* Asset Allocation Chart */}
-            <div className="flex flex-col gap-4">
-              <h2 className="font-label-mono text-xs text-slate-400 uppercase tracking-widest">
-                Recommended Portfolio
-              </h2>
-              <div className="flex items-center justify-between">
-                {/* Donut Chart */}
-                <div className="relative w-40 h-40">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={typeData.allocation}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={40}
-                        outerRadius={65}
-                        dataKey="value"
-                        strokeWidth={2}
-                        stroke="#fff"
-                      >
-                        {typeData.allocation.map((_, index) => (
-                          <Cell
-                            key={`cell-${index}`}
-                            fill={CHART_COLORS[index % CHART_COLORS.length]}
-                          />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  {/* Center Label */}
-                  <div className="absolute inset-0 flex items-center justify-center flex-col">
-                    <span className="font-label-mono text-[9px] text-slate-400">
-                      Portfolio
-                    </span>
-                    <span className="font-headline-lg-mobile text-slate-800 font-bold text-sm">
-                      {typeData.allocation.length}종
-                    </span>
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{
+                        backgroundColor: CHART_COLORS[idx % CHART_COLORS.length],
+                      }}
+                    ></div>
+                    <span className="text-slate-500 truncate">{item.name}</span>
                   </div>
+                  <span className="text-slate-800 flex-shrink-0">{item.value}%</span>
                 </div>
-
-                {/* Legend */}
-                <div className="flex flex-col gap-2.5 font-label-mono text-xs">
-                  {typeData.allocation.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-sm flex-shrink-0"
-                        style={{
-                          backgroundColor:
-                            CHART_COLORS[idx % CHART_COLORS.length],
-                        }}
-                      ></div>
-                      <span className="text-slate-600">
-                        {item.name}: {item.value}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Branding Footer */}
-            <div className="mt-2 pt-4 border-t border-slate-100 w-full text-center">
-              <span className="font-label-mono text-[9px] text-slate-400 uppercase tracking-widest">
-                Visionary Analyst Asset Management
-              </span>
+              ))}
             </div>
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="flex flex-col gap-3 w-full">
-          <button className="glow-button bg-[#585cf4] hover:bg-[#4c50e0] text-white py-4 px-6 rounded-xl font-medium flex items-center justify-center gap-2 shadow-lg hover:scale-[1.01] transition-all">
-            <span className="material-symbols-outlined font-bold">
-              download
-            </span>
-            결과 이미지 저장
-          </button>
-          <button className="bg-white border border-slate-200 hover:bg-slate-50 text-indigo-600 py-4 px-6 rounded-xl font-medium flex items-center justify-center gap-2 transition-all">
-            <span className="material-symbols-outlined">share</span>
-            링크 공유하기
-          </button>
+          {/* Side by side save & share */}
+          <div className="flex gap-3 w-full">
+            <button className="flex-1 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all text-sm">
+              <span className="material-symbols-outlined text-lg">download</span>
+              이미지 저장
+            </button>
+            <button className="flex-1 py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all text-sm">
+              <span className="material-symbols-outlined text-lg">share</span>
+              공유하기
+            </button>
+          </div>
+          
+          {/* Large play again button */}
           <Link
             href="/survey"
-            className="flex justify-center rounded-xl bg-white border border-slate-200 py-3.5 text-sm font-semibold text-slate-500 hover:bg-slate-50 transition-colors mt-2"
+            className="w-full py-4.5 bg-[#004be6] hover:bg-[#003cb3] text-white rounded-2xl font-bold flex items-center justify-center transition-all shadow-md text-center text-base md:text-lg"
           >
-            테스트 다시하기
+            다시 진단하기
           </Link>
         </div>
       </main>

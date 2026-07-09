@@ -58,13 +58,16 @@ export default function Home() {
           </div>
 
           {/* Action Area */}
-          <div className="flex flex-col items-center gap-stack-lg mt-stack-md">
+          <div className="flex flex-col items-center gap-4 mt-stack-md">
+            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#e6fcf5] rounded-full text-xs md:text-sm font-semibold text-[#099268] border border-[#c3fae8]/80 shadow-sm">
+              <span>⏱️ 약 1분 · 12문항</span>
+            </div>
             <Link
               href="/survey"
-              className="glow-button bg-[#585cf4] text-white font-headline-lg-mobile text-headline-lg-mobile px-12 py-6 rounded-xl hover:bg-[#4c50e0] transition-all transform hover:-translate-y-1 active:translate-y-0 shadow-lg flex items-center gap-3"
+              className="bg-[#004be6] hover:bg-[#003cb3] text-white font-bold text-lg md:text-xl px-12 py-4.5 rounded-2xl transition-all transform hover:-translate-y-0.5 active:translate-y-0 shadow-md flex items-center justify-center gap-3 w-64 md:w-80"
             >
+              <span className="text-sm">▶</span>
               <span>진단 시작하기</span>
-              <span className="material-symbols-outlined">arrow_forward</span>
             </Link>
 
             <div className="flex flex-col items-center gap-6 w-full max-w-md mt-8">
