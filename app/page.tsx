@@ -64,9 +64,9 @@ export default function Home() {
             </div>
             <Link
               href="/survey"
-              className="bg-[#004be6] hover:bg-[#003cb3] text-white font-bold text-lg md:text-xl px-12 py-4.5 rounded-2xl transition-all transform hover:-translate-y-0.5 active:translate-y-0 shadow-md flex items-center justify-center gap-3 w-64 md:w-80"
+              className="bg-[#004be6] hover:bg-[#003cb3] text-white font-bold text-xl md:text-2xl px-12 py-5 md:py-6 rounded-2xl transition-all transform hover:-translate-y-0.5 active:translate-y-0 shadow-lg flex items-center justify-center gap-3 w-full max-w-xs md:max-w-sm"
             >
-              <span className="text-sm">▶</span>
+              <span className="text-base">▶</span>
               <span>진단 시작하기</span>
             </Link>
 

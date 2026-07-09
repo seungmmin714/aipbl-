@@ -253,7 +253,7 @@ export default function ResultPage() {
           {/* Large play again button */}
           <Link
             href="/survey"
-            className="w-full py-4.5 bg-[#004be6] hover:bg-[#003cb3] text-white rounded-2xl font-bold flex items-center justify-center transition-all shadow-md text-center text-base md:text-lg"
+            className="w-full py-5 bg-[#004be6] hover:bg-[#003cb3] text-white rounded-2xl font-bold flex items-center justify-center transition-all shadow-lg text-center text-lg md:text-xl"
           >
             다시 진단하기
           </Link>
