@@ -100,11 +100,7 @@ export default function Home() {
                 </button>
               </form>
 
-              <div className="flex gap-4">
-                <span className="font-label-mono text-label-mono text-cyan-500">#투자성향</span>
-                <span className="font-label-mono text-label-mono text-cyan-500">#자산배분</span>
-                <span className="font-label-mono text-label-mono text-cyan-500">#MBTI</span>
-              </div>
+
             </div>
 
             {/* Data Point Visual */}
