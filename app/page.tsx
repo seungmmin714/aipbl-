@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { isValidMBTICode } from "@/lib/mbti";
+import { GOOGLE_FORM_URL } from "@/lib/config";
 
 export default function Home() {
   const [searchCode, setSearchCode] = useState("");
@@ -41,9 +42,17 @@ export default function Home() {
           </span>
         </div>
         <div className="flex items-center">
-          <button className="p-2 rounded-full hover:bg-slate-100 transition-colors text-indigo-600" aria-label="계정">
-            <span className="material-symbols-outlined" aria-hidden="true">account_circle</span>
-          </button>
+          {/* 설문조사(구글폼) 링크 — URL은 lib/config.ts 또는 NEXT_PUBLIC_GOOGLE_FORM_URL에서 관리 */}
+          <a
+            href={GOOGLE_FORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-slate-100 transition-colors text-indigo-600 font-semibold text-sm"
+            aria-label="설문조사 참여 (새 창)"
+          >
+            <span className="material-symbols-outlined" aria-hidden="true">rate_review</span>
+            <span className="hidden sm:inline">설문조사</span>
+          </a>
         </div>
       </header>
 
@@ -57,11 +66,11 @@ export default function Home() {
               Investment Diagnostic Engine
             </div>
             {/* Headline */}
-            <h1 className="font-headline-lg text-headline-lg md:text-[64px] md:leading-[1.1] md:font-extrabold text-slate-800 text-glow">
+            <h1 className="font-headline-lg text-headline-lg md:text-[64px] md:leading-[1.1] md:font-extrabold text-slate-800 text-glow break-keep">
               나의 투자 MBTI는 무엇일까?
             </h1>
             {/* Subtext — DEF-12: 12가지 문항 (이미 맞음) */}
-            <p className="font-body-md text-body-md md:text-[20px] md:leading-[32px] text-slate-500 max-w-xl mx-auto mt-stack-md">
+            <p className="font-body-md text-body-md md:text-[20px] md:leading-[32px] text-slate-500 max-w-xl mx-auto mt-stack-md break-keep">
               12가지 문항에 답하고, 나에게 꼭 맞는 맞춤형 자산 배분 포트폴리오를 추천받아 보세요.
             </p>
           </div>
@@ -69,7 +78,7 @@ export default function Home() {
           {/* Action Area */}
           <div className="flex flex-col items-center gap-4 mt-stack-md">
             {/* DEF-13: 소요시간 통일 — 약 3분 · 12문항 */}
-            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#e6fcf5] rounded-full text-xs md:text-sm font-semibold text-[#099268] border border-[#c3fae8]/80 shadow-sm">
+            <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#e6fcf5] rounded-full text-xs md:text-sm font-semibold text-[#099268] border border-[#c3fae8]/80 shadow-sm whitespace-nowrap">
               <span>⏱️ 약 3분 · 12문항</span>
             </div>
             <Link

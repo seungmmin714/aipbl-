@@ -1,0 +1,47 @@
+// Neon Postgres + Prisma
+// DATABASE_URL은 .env.local(로컬) 또는 Vercel 환경변수(배포)에 설정.
+// Neon에서는 마이그레이션(prisma migrate) 시 pooler가 아닌 direct 연결 문자열을 사용할 것.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 테스트 참여자 — 시작/완료 시각 기록
+model Participant {
+  id          String     @id @default(cuid())
+  startedAt   DateTime   @default(now())
+  completedAt DateTime?
+  results     Result[]
+  feedbacks   Feedback[]
+
+  @@map("participants")
+}
+
+// 진단 결과 — 결과 페이지 조회 시 기록 (공유 링크 직접 방문은 participant 없음)
+model Result {
+  id            String       @id @default(cuid())
+  code          String // MBTI 유형 코드 (예: RDLG)
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id])
+  createdAt     DateTime     @default(now())
+
+  @@index([code])
+  @@map("results")
+}
+
+// 사용자 개선사항/추가의견
+model Feedback {
+  id            String       @id @default(cuid())
+  content       String
+  code          String? // 어떤 결과 유형 화면에서 제출했는지
+  participantId String?
+  participant   Participant? @relation(fields: [participantId], references: [id])
+  createdAt     DateTime     @default(now())
+
+  @@map("feedback")
+}

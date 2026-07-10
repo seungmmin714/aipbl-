@@ -1,11 +1,14 @@
 "use client";
 
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import html2canvas from "html2canvas";
 import mbtiTypes from "@/data/mbti-types.json";
+import { GOOGLE_FORM_URL } from "@/lib/config";
+
+const PARTICIPANT_KEY = "investMBTI_participant";
 
 // 도넛 차트 컬러 팔레트 ( mock-up 색상 맞춤: Blue, Mint/Teal, Gold/Yellow, Slate/Gray )
 const CHART_COLORS = ["#004be6", "#06b6d4", "#a16207", "#cbd5e1", "#6366f1", "#f472b6"];
@@ -15,6 +18,10 @@ export default function ResultPage() {
   const code = (params?.code as string)?.toUpperCase() || "";
   const printRef = useRef<HTMLDivElement>(null);
   const [isSaving, setIsSaving] = useState(false); // DEF-05: 중복 클릭 방지
+  const [feedback, setFeedback] = useState("");
+  const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "sending" | "done" | "error">(
+    "idle"
+  );
 
   // 이미지를 base64 Data URL로 변환하는 헬퍼
   const imgToBase64 = (imgEl: HTMLImageElement): Promise<string> => {
@@ -112,6 +119,46 @@ export default function ResultPage() {
   // 유형 데이터 조회
   const typeData = mbtiTypes.find((t) => t.code === code);
 
+  // 결과 조회 기록 (DB 통계용) — 세션당 코드별 1회, 실패해도 화면에 영향 없음
+  useEffect(() => {
+    if (!code || !typeData) return;
+    const trackedKey = `investMBTI_tracked_${code}`;
+    if (sessionStorage.getItem(trackedKey)) return;
+    sessionStorage.setItem(trackedKey, "1");
+    fetch("/api/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "result",
+        code,
+        participantId: sessionStorage.getItem(PARTICIPANT_KEY),
+      }),
+    }).catch(() => {});
+  }, [code, typeData]);
+
+  const handleSubmitFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const content = feedback.trim();
+    if (!content || feedbackStatus === "sending") return;
+    setFeedbackStatus("sending");
+    try {
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content,
+          code,
+          participantId: sessionStorage.getItem(PARTICIPANT_KEY),
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setFeedbackStatus("done");
+      setFeedback("");
+    } catch {
+      setFeedbackStatus("error");
+    }
+  };
+
   // 존재하지 않는 코드 처리
   if (!typeData) {
     return (
@@ -158,9 +205,17 @@ export default function ResultPage() {
           </Link>
         </div>
         <span className="font-extrabold text-[#004be6] text-xl tracking-tight">Invest-Type</span>
-        <div className="flex items-center text-[#004be6]">
-          <span className="material-symbols-outlined text-2xl font-light" aria-hidden="true">help_outline</span>
-        </div>
+        {/* 설문조사(구글폼) 링크 — URL은 lib/config.ts에서 관리 */}
+        <a
+          href={GOOGLE_FORM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-[#004be6] hover:opacity-80 font-semibold text-sm"
+          aria-label="설문조사 참여 (새 창)"
+        >
+          <span className="material-symbols-outlined text-2xl font-light" aria-hidden="true">rate_review</span>
+          <span className="hidden sm:inline">설문조사</span>
+        </a>
       </header>
 
       {/* Main Content Canvas */}
@@ -366,6 +421,63 @@ export default function ResultPage() {
           >
             다시 진단하기
           </Link>
+
+          {/* 구글폼 설문 참여 버튼 */}
+          <a
+            href={GOOGLE_FORM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all text-sm"
+          >
+            <span className="material-symbols-outlined text-lg" aria-hidden="true">rate_review</span>
+            설문 참여하기
+          </a>
+        </div>
+
+        {/* 개선 의견 폼 — 이미지 캡처 영역(printRef) 밖에 위치 */}
+        <div className="w-full px-4 mt-4">
+          <div className="bg-white shadow-md rounded-3xl p-6 border border-slate-100">
+            <div className="flex items-center gap-2 text-slate-800 font-bold text-base border-b border-slate-50 pb-3 mb-4">
+              <span className="material-symbols-outlined text-lg text-slate-400" aria-hidden="true">chat_bubble</span>
+              <h3>개선 의견 보내기</h3>
+            </div>
+            {feedbackStatus === "done" ? (
+              <div className="flex flex-col items-center gap-2 py-4 text-center" role="status">
+                <span className="material-symbols-outlined text-4xl text-emerald-500" aria-hidden="true">check_circle</span>
+                <p className="text-slate-700 font-semibold text-sm">의견이 제출되었습니다. 감사합니다!</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitFeedback} className="flex flex-col gap-3">
+                <textarea
+                  value={feedback}
+                  onChange={(e) => {
+                    setFeedback(e.target.value);
+                    if (feedbackStatus === "error") setFeedbackStatus("idle");
+                  }}
+                  rows={4}
+                  maxLength={1000}
+                  placeholder="서비스 개선사항이나 추가 의견을 자유롭게 남겨 주세요."
+                  className="w-full border border-slate-200 rounded-xl p-3 text-sm text-slate-700 focus:outline-none focus:border-[#004be6] resize-none"
+                  aria-label="개선 의견 입력"
+                />
+                <div className="flex items-center justify-between min-h-[16px]">
+                  <span className="text-[11px] text-slate-400">{feedback.length}/1000</span>
+                  {feedbackStatus === "error" && (
+                    <span className="text-xs text-red-500" role="alert">
+                      제출에 실패했습니다. 잠시 후 다시 시도해 주세요.
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  disabled={!feedback.trim() || feedbackStatus === "sending"}
+                  className="w-full py-3 bg-[#004be6] text-white rounded-xl font-bold text-sm hover:bg-[#003cb3] transition-all disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed"
+                >
+                  {feedbackStatus === "sending" ? "제출 중…" : "의견 제출"}
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </main>
     </div>

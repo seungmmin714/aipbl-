@@ -7,6 +7,44 @@ import { calculateMBTI, Answer, TOTAL_QUESTIONS } from "@/lib/mbti";
 import questionsData from "@/data/questions.json";
 
 const STORAGE_KEY = "investMBTI_survey";
+const PARTICIPANT_KEY = "investMBTI_participant";
+
+/** 참여자 시작 기록 — 실패해도 설문 진행을 막지 않는다 */
+function trackStart() {
+  if (typeof window === "undefined") return;
+  if (
+    sessionStorage.getItem(PARTICIPANT_KEY) ||
+    sessionStorage.getItem(`${PARTICIPANT_KEY}_pending`)
+  ) {
+    return;
+  }
+  sessionStorage.setItem(`${PARTICIPANT_KEY}_pending`, "1");
+  fetch("/api/track", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event: "start" }),
+  })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (data?.participantId) {
+        sessionStorage.setItem(PARTICIPANT_KEY, data.participantId);
+      }
+    })
+    .catch(() => {})
+    .finally(() => sessionStorage.removeItem(`${PARTICIPANT_KEY}_pending`));
+}
+
+/** 참여자 완료 기록 (fire-and-forget) */
+function trackComplete() {
+  if (typeof window === "undefined") return;
+  const participantId = sessionStorage.getItem(PARTICIPANT_KEY);
+  if (!participantId) return;
+  fetch("/api/track", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event: "complete", participantId }),
+  }).catch(() => {});
+}
 
 interface SurveyState {
   currentIdx: number;
@@ -76,6 +114,11 @@ export default function SurveyPage() {
     saveSurveyState({ currentIdx, answers });
   }, [currentIdx, answers]);
 
+  // 참여자 시작 기록 (DB 통계용)
+  useEffect(() => {
+    trackStart();
+  }, []);
+
   const saveAnswer = useCallback(
     (value: string) => {
       if (isTransitioning) return; // 전환 중 클릭 방지 (TC-13)
@@ -106,6 +149,7 @@ export default function SurveyPage() {
       try {
         const result = calculateMBTI(finalAnswers);
         clearSurveyState(); // 완주 시 sessionStorage 정리 (TC-20)
+        trackComplete(); // 완료 시각 기록 (participantId는 유지 — 결과/피드백 연결용)
         router.push(`/result/${result.code}`);
       } catch (err) {
         console.error("채점 오류:", err);
