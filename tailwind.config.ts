@@ -90,7 +90,19 @@ const config: Config = {
         "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
         "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
         "mbti-code": ["48px", { "lineHeight": "1.2", "letterSpacing": "-0.04em", "fontWeight": "800" }]
-      }
+      },
+      transitionDuration: {
+        "250": "250ms",
+      },
+      animation: {
+        "fade-in": "fadeIn 0.5s ease-out forwards",
+      },
+      keyframes: {
+        fadeIn: {
+          "0%": { opacity: "0", transform: "translateY(8px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+      },
     },
   },
   plugins: [],

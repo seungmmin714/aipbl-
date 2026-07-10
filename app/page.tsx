@@ -3,37 +3,46 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { isValidMBTICode } from "@/lib/mbti";
 
 export default function Home() {
   const [searchCode, setSearchCode] = useState("");
+  const [searchError, setSearchError] = useState("");
   const router = useRouter();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchCode.trim()) return;
-    
-    // 코드를 대문자로 정리하여 이동
-    const formattedCode = searchCode.trim().toUpperCase();
-    
-    // 라우팅 이동
+    const trimmed = searchCode.trim();
+    if (!trimmed) return;
+
+    // DEF-04: isValidMBTICode 호출하여 검증
+    const formattedCode = trimmed.toUpperCase();
+    if (!isValidMBTICode(formattedCode)) {
+      setSearchError("유효한 투자 MBTI 코드가 아닙니다. (예: RDLG)");
+      return;
+    }
+
+    setSearchError("");
     router.push(`/result/${formattedCode}`);
   };
+
+  const currentYear = new Date().getFullYear(); // DEF-18
 
   return (
     <div className="min-h-screen bg-[#f4f5f9] text-[#001a42] flex flex-col font-body-md relative overflow-x-hidden">
       {/* Abstract Tech Background */}
       <div className="tech-bg"></div>
 
-      {/* Top Navigation App Bar */}
+      {/* Top Navigation App Bar — DEF-14: 브랜드명 Invest-Type으로 통일 */}
       <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-gutter h-16 bg-white/70 backdrop-blur-xl border-b border-slate-200/50">
         <div className="flex items-center gap-4">
           <span className="font-headline-lg-mobile text-headline-lg-mobile font-bold text-indigo-600">
-            Visionary Analyst
+            Invest-Type
           </span>
         </div>
         <div className="flex items-center">
-          <button className="p-2 rounded-full hover:bg-slate-100 transition-colors text-indigo-600">
-            <span className="material-symbols-outlined">account_circle</span>
+          <button className="p-2 rounded-full hover:bg-slate-100 transition-colors text-indigo-600" aria-label="계정">
+            <span className="material-symbols-outlined" aria-hidden="true">account_circle</span>
           </button>
         </div>
       </header>
@@ -51,7 +60,7 @@ export default function Home() {
             <h1 className="font-headline-lg text-headline-lg md:text-[64px] md:leading-[1.1] md:font-extrabold text-slate-800 text-glow">
               나의 투자 MBTI는 무엇일까?
             </h1>
-            {/* Subtext */}
+            {/* Subtext — DEF-12: 12가지 문항 (이미 맞음) */}
             <p className="font-body-md text-body-md md:text-[20px] md:leading-[32px] text-slate-500 max-w-xl mx-auto mt-stack-md">
               12가지 문항에 답하고, 나에게 꼭 맞는 맞춤형 자산 배분 포트폴리오를 추천받아 보세요.
             </p>
@@ -59,8 +68,9 @@ export default function Home() {
 
           {/* Action Area */}
           <div className="flex flex-col items-center gap-4 mt-stack-md">
+            {/* DEF-13: 소요시간 통일 — 약 3분 · 12문항 */}
             <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#e6fcf5] rounded-full text-xs md:text-sm font-semibold text-[#099268] border border-[#c3fae8]/80 shadow-sm">
-              <span>⏱️ 약 1분 · 12문항</span>
+              <span>⏱️ 약 3분 · 12문항</span>
             </div>
             <Link
               href="/survey"
@@ -79,31 +89,49 @@ export default function Home() {
                 <div className="h-px bg-slate-200 flex-grow"></div>
               </div>
 
-              <form onSubmit={handleSearch} className="flex w-full gap-2">
-                <div className="relative flex-grow">
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">
-                    search
-                  </span>
-                  <input
-                    className="w-full bg-white border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-slate-800 font-body-md focus:outline-none focus:border-indigo-500 transition-colors"
-                    placeholder="결과 코드 입력 (예: RDLG)"
-                    type="text"
-                    value={searchCode}
-                    onChange={(e) => setSearchCode(e.target.value)}
-                  />
+              <form onSubmit={handleSearch} className="flex flex-col w-full gap-2">
+                <div className="flex w-full gap-2">
+                  <div className="relative flex-grow">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]" aria-hidden="true">
+                      search
+                    </span>
+                    <input
+                      id="search-code-input"
+                      className={`w-full bg-white border rounded-xl py-3 pl-10 pr-4 text-slate-800 font-body-md focus:outline-none transition-colors ${
+                        searchError
+                          ? "border-red-400 focus:border-red-500"
+                          : "border-slate-200 focus:border-indigo-500"
+                      }`}
+                      placeholder="결과 코드 입력 (예: RDLG)"
+                      type="text"
+                      value={searchCode}
+                      onChange={(e) => {
+                        setSearchCode(e.target.value);
+                        if (searchError) setSearchError("");
+                      }}
+                      maxLength={4}
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="bg-slate-800 text-white font-label-mono px-6 rounded-xl border border-slate-700 hover:bg-slate-700 transition-colors"
+                  >
+                    조회
+                  </button>
                 </div>
-                <button
-                  type="submit"
-                  className="bg-slate-800 text-white font-label-mono px-6 rounded-xl border border-slate-700 hover:bg-slate-700 transition-colors"
-                >
-                  조회
-                </button>
+                {/* DEF-04: 인라인 에러 메시지 */}
+                {searchError && (
+                  <p className="text-red-500 text-xs font-semibold px-1" role="alert">
+                    {searchError}
+                  </p>
+                )}
               </form>
-
 
             </div>
 
-            {/* Data Point Visual */}
+            {/* Data Point Visual — DEF-13: 3m으로 통일 */}
             <div className="flex items-center gap-6 mt-8 p-6 bg-white/60 border border-slate-200/80 rounded-2xl backdrop-blur-md shadow-sm">
               <div className="flex flex-col items-center">
                 <span className="font-mbti-code text-mbti-code text-[#4d8eff]">12</span>
@@ -124,24 +152,13 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Footer */}
+      {/* Footer — DEF-14: 브랜드 통일, DEF-18: 더미 링크 제거 + 동적 연도 */}
       <footer className="w-full py-stack-lg px-gutter flex flex-col md:flex-row justify-between items-center gap-stack-md bg-white border-t border-slate-200 mt-auto relative z-10">
         <div className="font-headline-lg-mobile text-headline-lg-mobile font-bold text-indigo-600">
-          Visionary Analyst
+          Invest-Type
         </div>
-        <nav className="flex gap-6">
-          <a className="font-label-mono text-label-mono text-slate-400 hover:text-cyan-500 transition-colors" href="#">
-            About
-          </a>
-          <a className="font-label-mono text-label-mono text-slate-400 hover:text-cyan-500 transition-colors" href="#">
-            Methodology
-          </a>
-          <a className="font-label-mono text-label-mono text-slate-400 hover:text-cyan-500 transition-colors" href="#">
-            Privacy Policy
-          </a>
-        </nav>
         <div className="font-label-mono text-label-mono text-slate-400">
-          © 2024 Visionary Analyst Asset Management
+          © {currentYear} Invest-Type. All rights reserved.
         </div>
       </footer>
     </div>
