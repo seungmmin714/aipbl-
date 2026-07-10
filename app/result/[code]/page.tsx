@@ -54,6 +54,19 @@ export default function ResultPage() {
         allowTaint: false,
         backgroundColor: "#f4f5f9",
         logging: false,
+        // html2canvas는 문서를 클론해 캡처하는데, 클론에서 CSS 애니메이션이
+        // 처음부터 다시 시작돼 fade-in 요소가 초기 상태(opacity 0)로 찍힌다.
+        // 클론 문서의 애니메이션을 전부 끄고 최종 상태로 고정한다.
+        onclone: (clonedDoc) => {
+          const style = clonedDoc.createElement("style");
+          style.textContent =
+            "*, *::before, *::after { animation: none !important; transition: none !important; }";
+          clonedDoc.head.appendChild(style);
+          clonedDoc.querySelectorAll<HTMLElement>('[class*="animate-"]').forEach((el) => {
+            el.style.opacity = "1";
+            el.style.transform = "none";
+          });
+        },
       });
 
       // 3. 원본 src 복원
