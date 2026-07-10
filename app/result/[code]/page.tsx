@@ -240,7 +240,7 @@ export default function ResultPage() {
         </div>
 
         {/* Card 3: 성격적 특징 (Detailed traits list) */}
-        <div className="bg-white shadow-md w-full rounded-3xl p-6 flex flex-col gap-4 border border-slate-100 mb-4 animate-fade-in">
+        <div className="bg-white shadow-md w-full rounded-3xl p-6 flex flex-col gap-4 border border-slate-100 mb-4">
           <div className="flex items-center gap-2 text-slate-800 font-bold text-base border-b border-slate-50 pb-3">
             <span className="material-symbols-outlined text-lg text-slate-400" aria-hidden="true">subject</span>
             <h3>성격적 특징</h3>
