@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { MessageSquareText } from "lucide-react";
 import { isValidMBTICode } from "@/lib/mbti";
 import { GOOGLE_FORM_URL } from "@/lib/config";
 
@@ -50,7 +51,7 @@ export default function Home() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-full hover:bg-slate-100 transition-colors text-indigo-600 font-semibold text-sm"
             aria-label="설문조사 참여 (새 창)"
           >
-            <span className="material-symbols-outlined" aria-hidden="true">rate_review</span>
+            <MessageSquareText className="w-5 h-5" aria-hidden="true" />
             <span className="hidden sm:inline">설문조사</span>
           </a>
         </div>

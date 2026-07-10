@@ -4,6 +4,7 @@ import { useRef, useCallback, useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { MessageSquareText } from "lucide-react";
 import html2canvas from "html2canvas";
 import mbtiTypes from "@/data/mbti-types.json";
 import { GOOGLE_FORM_URL } from "@/lib/config";
@@ -213,7 +214,7 @@ export default function ResultPage() {
           className="flex items-center gap-1 text-[#004be6] hover:opacity-80 font-semibold text-sm"
           aria-label="설문조사 참여 (새 창)"
         >
-          <span className="material-symbols-outlined text-2xl font-light" aria-hidden="true">rate_review</span>
+          <MessageSquareText className="w-6 h-6" aria-hidden="true" />
           <span className="hidden sm:inline">설문조사</span>
         </a>
       </header>
@@ -429,7 +430,7 @@ export default function ResultPage() {
             rel="noopener noreferrer"
             className="w-full py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all text-sm"
           >
-            <span className="material-symbols-outlined text-lg" aria-hidden="true">rate_review</span>
+            <MessageSquareText className="w-[18px] h-[18px]" aria-hidden="true" />
             설문 참여하기
           </a>
         </div>
