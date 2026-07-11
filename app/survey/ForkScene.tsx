@@ -13,11 +13,12 @@ export const REDUCED_ADVANCE_MS = 420;
 const PERSPECTIVE = 1200;
 
 /* 레이어별 깊이(translateZ)와 걷기 애니메이션 배율.
-   전경일수록 크게/빠르게 움직여 패럴랙스 깊이감을 만든다. */
+   전경일수록 크게/빠르게 움직여 패럴랙스 깊이감을 만든다.
+   bobPx: 걸음걸이(head-bob) 상하 흔들림 진폭 — 가까운 레이어일수록 크게 */
 const LAYER_CONFIG = {
-  background: { z: -420, walkScale: 1.2, walkShiftPct: 4 },
-  road: { z: -160, walkScale: 1.85, walkShiftPct: 10 },
-  foreground: { z: 40, walkScale: 2.3, walkShiftPct: 20 },
+  background: { z: -420, walkScale: 1.2, walkShiftPct: 4, bobPx: 5 },
+  road: { z: -160, walkScale: 1.85, walkShiftPct: 10, bobPx: 10 },
+  foreground: { z: 40, walkScale: 2.3, walkShiftPct: 20, bobPx: 18 },
 } as const;
 
 type LayerKind = keyof typeof LAYER_CONFIG;
@@ -113,26 +114,27 @@ function RoadArt({ theme }: { theme: SceneTheme }) {
     >
       {/* 들판 (배경 능선과 겹치도록 살짝 위에서 시작) */}
       <rect y="580" width="800" height="620" fill={theme.ground} />
-      {/* 갈림길: 발 앞의 넓은 길이 좌/우 소실점으로 갈라진다 */}
-      <g stroke={theme.roadEdge} strokeWidth="7" strokeLinejoin="round">
-        <polygon points="270,1200 530,1200 432,742 368,742" fill={theme.road} />
-        <polygon points="368,742 432,742 330,596 292,596" fill={theme.road} />
-        <polygon points="368,742 432,742 508,596 470,596" fill={theme.road} />
+      {/* 갈림길: 발 앞의 넓은 길이 지평선 근처까지 길게 뻗은 뒤 좌/우로 갈라진다
+          (분기점을 소실점 가까이 두어 멀리 있는 것처럼 보이게) */}
+      <g stroke={theme.roadEdge} strokeWidth="6" strokeLinejoin="round">
+        <polygon points="250,1200 550,1200 417,668 383,668" fill={theme.road} />
+        <polygon points="383,668 417,668 320,600 298,600" fill={theme.road} />
+        <polygon points="383,668 417,668 502,600 480,600" fill={theme.road} />
       </g>
       {/* 중앙 차선 */}
       <line
         x1="400"
         y1="1180"
         x2="400"
-        y2="775"
-        stroke="#ffffff"
-        strokeWidth="9"
-        strokeDasharray="36 30"
+        y2="700"
+        stroke={theme.roadEdge}
+        strokeWidth="8"
+        strokeDasharray="30 26"
         strokeLinecap="round"
-        opacity="0.5"
+        opacity="0.6"
       />
       {/* 갈림길 가운데 수풀 */}
-      <ellipse cx="400" cy="672" rx="24" ry="14" fill={theme.bushDark} />
+      <ellipse cx="400" cy="646" rx="14" ry="8" fill={theme.bushDark} />
     </svg>
   );
 }
@@ -203,12 +205,27 @@ function SceneLayer({
       initial={false}
       animate={
         walking
-          ? { scale: baseScale * cfg.walkScale, x: `${dir * cfg.walkShiftPct}%` }
-          : { scale: baseScale, x: "0%" }
+          ? {
+              scale: baseScale * cfg.walkScale,
+              x: `${dir * cfg.walkShiftPct}%`,
+              // 두 걸음 걷는 듯한 상하 흔들림 (footfall 리듬)
+              y: [0, -cfg.bobPx, cfg.bobPx * 0.4, -cfg.bobPx * 0.8, 0],
+            }
+          : { scale: baseScale, x: "0%", y: 0 }
       }
       transition={
         walking
-          ? { delay: 0.18, duration: 1.15, ease: [0.5, 0, 0.3, 1] }
+          ? {
+              delay: 0.18,
+              duration: 1.15,
+              ease: [0.5, 0, 0.3, 1],
+              y: {
+                delay: 0.18,
+                duration: 1.15,
+                times: [0, 0.3, 0.55, 0.8, 1],
+                ease: "easeInOut",
+              },
+            }
           : { duration: 0 }
       }
     >

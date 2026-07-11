@@ -30,7 +30,7 @@ export function getSceneAssets(questionId: string): SceneAssets {
   };
 }
 
-/** 플레이스홀더 장면의 색 테마 (축별로 시간대가 다른 하늘 연출) */
+/** 플레이스홀더 장면의 색 테마 (브랜드 톤 안에서 축별 색상 변주) */
 export interface SceneTheme {
   skyTop: string;
   skyBottom: string;
@@ -44,55 +44,57 @@ export interface SceneTheme {
   bushDark: string;
 }
 
-// R: 새벽/일출(모험) · D: 맑은 낮(데이터) · L: 황금 오후(장기) · G: 보랏빛 황혼(성장)
+// 시작/결과 화면의 브랜드 톤(화이트 #f4f5f9 · 블루 #004be6 · 시안 #06b6d4 ·
+// 퍼플 #ddb7ff · 피치 #ffb786)에 맞춘 라이트 파스텔 팔레트.
+// 축별로 색상(hue)만 살짝 다르게 — R: 블루 · D: 시안 · L: 인디고 · G: 바이올렛
 const SCENE_THEMES: Record<string, SceneTheme> = {
   R: {
-    skyTop: "#ffeeda",
-    skyBottom: "#ffc59e",
-    sun: "#ffb45e",
-    hillFar: "#f2a380",
-    hillNear: "#e08a63",
-    ground: "#ffd9a1",
-    road: "#d99e63",
-    roadEdge: "#b67c46",
-    bush: "#e8975f",
-    bushDark: "#cf7f4b",
+    skyTop: "#f0f6ff",
+    skyBottom: "#c5dcff",
+    sun: "#ffe1a1",
+    hillFar: "#b4cdf3",
+    hillNear: "#93b5e6",
+    ground: "#d7ecdf",
+    road: "#d0dae8",
+    roadEdge: "#9db0c8",
+    bush: "#a6d2bf",
+    bushDark: "#8cbfa9",
   },
   D: {
-    skyTop: "#e9f5ff",
-    skyBottom: "#bfe0ff",
-    sun: "#fff6c9",
-    hillFar: "#a9cdf0",
-    hillNear: "#85b4e3",
-    ground: "#b5e0a8",
-    road: "#e0d2ab",
-    roadEdge: "#b7a67c",
-    bush: "#8cc981",
-    bushDark: "#6faf66",
+    skyTop: "#ecfaff",
+    skyBottom: "#c0e9f8",
+    sun: "#fdf0bd",
+    hillFar: "#a3d9ec",
+    hillNear: "#80c5df",
+    ground: "#d2efe6",
+    road: "#d2dfe9",
+    roadEdge: "#9eb6c5",
+    bush: "#9cd6c6",
+    bushDark: "#81c2b0",
   },
   L: {
-    skyTop: "#fffbe6",
-    skyBottom: "#ffe9a3",
-    sun: "#ffcf57",
-    hillFar: "#ecc879",
-    hillNear: "#dcb35c",
-    ground: "#d8d489",
-    road: "#cfa763",
-    roadEdge: "#a98443",
-    bush: "#b3bd6b",
-    bushDark: "#99a655",
+    skyTop: "#f0f2ff",
+    skyBottom: "#ccd5fc",
+    sun: "#ffe2b5",
+    hillFar: "#b1bcf2",
+    hillNear: "#929ee3",
+    ground: "#d7ebe4",
+    road: "#ced8ee",
+    roadEdge: "#9aa7d0",
+    bush: "#a4cec3",
+    bushDark: "#8abaac",
   },
   G: {
-    skyTop: "#efe9ff",
-    skyBottom: "#cbbcf7",
-    sun: "#ffc9e3",
-    hillFar: "#ab9be4",
-    hillNear: "#9182d3",
-    ground: "#a99ade",
-    road: "#8d80c0",
-    roadEdge: "#6f639f",
-    bush: "#8375bd",
-    bushDark: "#6c5fa6",
+    skyTop: "#f7f3ff",
+    skyBottom: "#dccffa",
+    sun: "#ffd7ea",
+    hillFar: "#c2aeef",
+    hillNear: "#a68ede",
+    ground: "#dfdcf2",
+    road: "#d1cce8",
+    roadEdge: "#a297ca",
+    bush: "#b7a6df",
+    bushDark: "#9e8acf",
   },
 };
 
