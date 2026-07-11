@@ -218,7 +218,7 @@ export default function SurveyPage() {
       </div>
 
       {/* 하단 진행도 바 — 현재 문항/전체 표시 (DEF-19: role="progressbar" 유지) */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/15 to-transparent px-4 pb-5 pt-10">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-[#1e3a8a]/15 to-transparent px-4 pb-5 pt-10">
         <div className="pointer-events-auto mx-auto flex w-full max-w-md items-center gap-3">
           <button
             type="button"

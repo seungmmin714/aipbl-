@@ -163,8 +163,8 @@ function ForegroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
     >
       <defs>
         <linearGradient id={vignetteId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#000000" stopOpacity="0" />
-          <stop offset="100%" stopColor="#000000" stopOpacity="0.16" />
+          <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0" />
+          <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0.14" />
         </linearGradient>
       </defs>
       {/* 좌우 근경 수풀 — 화면 하단 모서리를 감싸는 프레임 */}
