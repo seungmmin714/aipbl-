@@ -9,13 +9,6 @@
 //   {문항ID}-road.png         갈림길 레이어      (예: q1-road.png)
 //   {문항ID}-foreground.png   바닥/근경 레이어   (예: q1-foreground.png)
 //
-// 1인칭 발(신발) 일러스트 — 모든 문항 공통:
-//   feet-idle.png             대기 상태 (두 발 모두 바닥)
-//   feet-left-step.png        왼발이 앞으로 나간 순간
-//   feet-right-step.png       오른발이 앞으로 나간 순간
-//   (세 파일이 모두 있어야 걷기 스프라이트 교체가 활성화되며,
-//    하나라도 없으면 SVG 플레이스홀더 발이 사용됩니다)
-//
 // 권장 스펙: 세로형 1200×1800px 이상, road/foreground는 투명 배경 PNG(또는 WebP).
 // 자세한 가이드는 public/images/scenes/README.md 참고.
 // ─────────────────────────────────────────────────────────────
@@ -34,21 +27,6 @@ export function getSceneAssets(questionId: string): SceneAssets {
     background: `${SCENES_BASE_PATH}/${questionId}-background.png`,
     road: `${SCENES_BASE_PATH}/${questionId}-road.png`,
     foreground: `${SCENES_BASE_PATH}/${questionId}-foreground.png`,
-  };
-}
-
-/** 1인칭 발(신발) 일러스트 경로 — 모든 문항에서 공통 사용 */
-export interface FeetAssets {
-  idle: string;
-  leftStep: string;
-  rightStep: string;
-}
-
-export function getFeetAssets(): FeetAssets {
-  return {
-    idle: `${SCENES_BASE_PATH}/feet-idle.png`,
-    leftStep: `${SCENES_BASE_PATH}/feet-left-step.png`,
-    rightStep: `${SCENES_BASE_PATH}/feet-right-step.png`,
   };
 }
 

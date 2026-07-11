@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { getSceneAssets, getSceneTheme, getFeetAssets, type SceneTheme } from "@/lib/scenes";
+import { getSceneAssets, getSceneTheme, type SceneTheme } from "@/lib/scenes";
 
 /* ─── 전환 타이밍 상수 — page.tsx의 진행 로직(setTimeout)과 동기화되어야 한다 ─── */
 /** 선택 → 다음 문항 전환까지: 버튼 하이라이트(0.2s) + 카메라 전진(1.15s) + 화이트아웃 */
@@ -21,8 +21,7 @@ const LAYER_CONFIG = {
   foreground: { z: 40, walkScale: 2.3, walkShiftPct: 20, bobPx: 12 },
 } as const;
 
-/* 걷기 리듬 — 4걸음: 왼발(12%) → 오른발(37%) → 왼발(62%) → 오른발(87%)
-   발 애니메이션과 헤드밥이 같은 타이밍을 공유한다 */
+/* 걷기 리듬 — 4걸음 발디딤(12% → 37% → 62% → 87%)에 맞춘 헤드밥 타이밍 */
 const STEP_DELAY = 0.18;
 const STEP_DURATION = 1.15;
 const HEADBOB_TIMES = [0, 0.12, 0.25, 0.37, 0.5, 0.62, 0.75, 0.87, 1];
@@ -78,7 +77,8 @@ function BackgroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
     <svg
       className="absolute inset-0 h-full w-full"
       viewBox="0 0 800 1200"
-      preserveAspectRatio="xMidYMid slice"
+      // 화면 비율과 무관하게 구도 유지 (도로 레이어와 동일한 스트레치)
+      preserveAspectRatio="none"
       aria-hidden="true"
     >
       <defs>
@@ -89,21 +89,21 @@ function BackgroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
       </defs>
       <rect width="800" height="1200" fill={`url(#${skyId})`} />
       {/* 해/달 */}
-      <circle cx="565" cy="260" r="150" fill={theme.sun} opacity="0.35" />
-      <circle cx="565" cy="260" r="86" fill={theme.sun} />
+      <circle cx="580" cy="200" r="130" fill={theme.sun} opacity="0.35" />
+      <circle cx="580" cy="200" r="72" fill={theme.sun} />
       {/* 구름 */}
       <g fill="#ffffff" opacity="0.75">
-        <ellipse cx="200" cy="200" rx="95" ry="26" />
-        <ellipse cx="255" cy="176" rx="60" ry="20" />
-        <ellipse cx="620" cy="130" rx="70" ry="18" opacity="0.6" />
+        <ellipse cx="190" cy="160" rx="95" ry="24" />
+        <ellipse cx="245" cy="138" rx="60" ry="18" />
+        <ellipse cx="620" cy="90" rx="70" ry="16" opacity="0.6" />
       </g>
-      {/* 원경 능선 — 높아진 지평선(y≈470)에 맞춰 배치 */}
+      {/* 원경 능선 — 지평선(화면 약 32%, y≈380)에 맞춰 배치 */}
       <path
-        d="M0 430 Q 130 350 260 418 Q 340 380 430 420 Q 560 355 680 418 Q 740 395 800 412 L 800 560 L 0 560 Z"
+        d="M0 345 Q 130 280 260 335 Q 340 305 430 333 Q 560 285 680 332 Q 740 315 800 328 L 800 460 L 0 460 Z"
         fill={theme.hillFar}
       />
       <path
-        d="M0 470 Q 160 405 320 462 Q 470 415 620 465 Q 710 435 800 455 L 800 600 L 0 600 Z"
+        d="M0 382 Q 160 330 320 375 Q 470 338 620 372 Q 710 350 800 365 L 800 500 L 0 500 Z"
         fill={theme.hillNear}
       />
     </svg>
@@ -115,37 +115,38 @@ function RoadArt({ theme }: { theme: SceneTheme }) {
     <svg
       className="absolute inset-0 h-full w-full"
       viewBox="0 0 800 1200"
-      preserveAspectRatio="xMidYMax slice"
+      // 화면 비율과 무관하게 항상 Y자 전체 구도가 보이도록 스트레치
+      preserveAspectRatio="none"
       aria-hidden="true"
     >
-      {/* 들판 — 분기점이 화면 중상단(약 42%)에 오도록 지평선을 높게 잡는다 */}
-      <rect y="470" width="800" height="730" fill={theme.ground} />
+      {/* 들판 — 지평선을 화면 약 32% 지점에 고정 */}
+      <rect y="380" width="800" height="820" fill={theme.ground} />
       {/* Y자 갈림길: 하단 중앙의 넓은 길(가까움)이 위로 갈수록 좁아지다
-          중상단 분기점에서 좌상단/우상단으로 곡선을 그리며 갈라진다 */}
+          화면 42% 지점 분기점에서 좌상단/우상단 화면 끝까지 곡선으로 갈라진다 */}
       <path
-        d="M 180 1200
-           C 250 940, 320 720, 352 586
-           C 255 528, 155 502, 70 482
-           L 88 445
-           C 185 458, 305 488, 400 520
-           C 495 488, 615 458, 712 445
-           L 730 482
-           C 645 502, 545 528, 448 586
-           C 480 720, 550 940, 620 1200
+        d="M 140 1200
+           C 230 900, 300 720, 330 640
+           C 250 560, 130 515, -40 478
+           L -20 402
+           C 130 440, 290 472, 400 510
+           C 510 472, 670 440, 820 402
+           L 840 478
+           C 670 515, 550 560, 470 640
+           C 500 720, 570 900, 660 1200
            Z"
         fill={theme.road}
         stroke={theme.roadEdge}
         strokeWidth="6"
         strokeLinejoin="round"
       />
-      {/* 중앙 차선 — 트렁크는 분기점 앞에서 끊기고, 두 갈래를 따라 이어진다 */}
+      {/* 중앙 차선 — 트렁크는 분기점 앞에서 끊기고, 두 갈래를 따라 화면 끝까지 이어진다 */}
       <g stroke={theme.roadEdge} strokeLinecap="round" fill="none" opacity="0.6">
-        <path d="M 400 1180 L 400 660" strokeWidth="8" strokeDasharray="30 26" />
-        <path d="M 385 560 C 300 522, 200 500, 105 470" strokeWidth="6" strokeDasharray="22 20" />
-        <path d="M 415 560 C 500 522, 600 500, 695 470" strokeWidth="6" strokeDasharray="22 20" />
+        <path d="M 400 1180 L 400 700" strokeWidth="8" strokeDasharray="30 26" />
+        <path d="M 372 592 C 280 540, 150 505, 20 468" strokeWidth="6" strokeDasharray="22 20" />
+        <path d="M 428 592 C 520 540, 650 505, 780 468" strokeWidth="6" strokeDasharray="22 20" />
       </g>
       {/* 분기점 위 수풀 */}
-      <ellipse cx="400" cy="490" rx="12" ry="7" fill={theme.bushDark} />
+      <ellipse cx="400" cy="478" rx="12" ry="7" fill={theme.bushDark} />
     </svg>
   );
 }
@@ -156,7 +157,8 @@ function ForegroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
     <svg
       className="absolute inset-0 h-full w-full"
       viewBox="0 0 800 1200"
-      preserveAspectRatio="xMidYMax slice"
+      // 화면 비율과 무관하게 구도 유지 (도로 레이어와 동일한 스트레치)
+      preserveAspectRatio="none"
       aria-hidden="true"
     >
       <defs>
@@ -182,176 +184,6 @@ function ForegroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
       {/* 하단 비네트 */}
       <rect y="1050" width="800" height="150" fill={`url(#${vignetteId})`} />
     </svg>
-  );
-}
-
-/* ─── 1인칭 발 (화면 하단 중앙) ─── */
-
-/** 플레이스홀더 신발 — 1인칭 시점에서 내려다본 발등 */
-function ShoePlaceholder({ tiltClass }: { tiltClass: string }) {
-  return (
-    <svg
-      viewBox="0 0 90 130"
-      className={`h-auto w-full drop-shadow-md ${tiltClass}`}
-      aria-hidden="true"
-    >
-      {/* 신발 본체 */}
-      <path
-        d="M 13 130 L 10 58 C 9 24, 25 5, 45 5 C 65 5, 81 24, 80 58 L 77 130 Z"
-        fill="#3d4f70"
-      />
-      {/* 토캡 */}
-      <path
-        d="M 45 5 C 63 5, 76 20, 77 40 C 66 48, 24 48, 13 40 C 14 20, 27 5, 45 5 Z"
-        fill="#e2e8f0"
-      />
-      {/* 신발끈 */}
-      <rect x="20" y="62" width="50" height="8" rx="4" fill="#e2e8f0" opacity="0.9" />
-      <rect x="20" y="80" width="50" height="8" rx="4" fill="#e2e8f0" opacity="0.9" />
-      <rect x="20" y="98" width="50" height="8" rx="4" fill="#e2e8f0" opacity="0.9" />
-    </svg>
-  );
-}
-
-/**
- * 1인칭 발 — 대기 시 미세한 idle 흔들림, 선택 시 좌/우발이 번갈아 나가는 4걸음 모션.
- * public/images/scenes/feet-idle.png / feet-left-step.png / feet-right-step.png가
- * 모두 있으면 이미지 스프라이트 교체 방식으로, 없으면 SVG 플레이스홀더로 동작한다.
- */
-function WalkingFeet({ walkSide, reduced }: { walkSide: RoadSide | null; reduced: boolean }) {
-  const feet = getFeetAssets();
-  const [idleOk, setIdleOk] = useState(false);
-  const [leftOk, setLeftOk] = useState(false);
-  const [rightOk, setRightOk] = useState(false);
-
-  const walking = walkSide !== null && !reduced;
-  // 왼쪽 길 선택 → 발이 왼쪽으로 이동·회전
-  const dir = walkSide === "left" ? -1 : 1;
-  const hasStepSprites = idleOk && leftOk && rightOk;
-  const stepTransition = { delay: STEP_DELAY, duration: STEP_DURATION };
-
-  return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[12] flex justify-center">
-      <motion.div
-        className="relative h-[118px] w-[184px]"
-        initial={false}
-        animate={
-          walking
-            ? {
-                x: dir * 26,
-                rotate: dir * 9,
-                y: [0, -6, 2, -6, 2, -6, 2, -5, 0],
-              }
-            : { x: 0, rotate: 0, y: reduced ? 0 : [0, -3, 0] }
-        }
-        transition={
-          walking
-            ? {
-                ...stepTransition,
-                ease: "easeInOut",
-                y: { ...stepTransition, times: HEADBOB_TIMES, ease: "easeInOut" },
-              }
-            : reduced
-              ? { duration: 0 }
-              : {
-                  x: { duration: 0.2 },
-                  rotate: { duration: 0.2 },
-                  // idle: 숨쉬듯 미세하게 위아래로
-                  y: { duration: 2.6, repeat: Infinity, ease: "easeInOut" },
-                }
-        }
-      >
-        {/* SVG 플레이스홀더 발 (feet-idle.png 로드 시 숨김) */}
-        {!idleOk && (
-          <>
-            <motion.div
-              className="absolute bottom-[-10px] left-[10px] w-[76px]"
-              initial={false}
-              animate={walking ? { y: [0, -14, 0, 0, -14, 0, 0] } : { y: 0 }}
-              transition={
-                walking
-                  ? { ...stepTransition, times: [0, 0.12, 0.25, 0.5, 0.62, 0.75, 1], ease: "easeInOut" }
-                  : { duration: 0.2 }
-              }
-            >
-              <ShoePlaceholder tiltClass="-rotate-[7deg]" />
-            </motion.div>
-            <motion.div
-              className="absolute bottom-[-10px] right-[10px] w-[76px]"
-              initial={false}
-              animate={walking ? { y: [0, 0, -14, 0, 0, -14, 0] } : { y: 0 }}
-              transition={
-                walking
-                  ? { ...stepTransition, times: [0, 0.25, 0.37, 0.5, 0.75, 0.87, 1], ease: "easeInOut" }
-                  : { duration: 0.2 }
-              }
-            >
-              <ShoePlaceholder tiltClass="rotate-[7deg]" />
-            </motion.div>
-          </>
-        )}
-
-        {/* 실제 발 일러스트 — 파일이 있으면 자동 사용 */}
-        <motion.img
-          src={feet.idle}
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-          onLoad={() => setIdleOk(true)}
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-          className="absolute inset-0 h-full w-full select-none object-contain object-bottom"
-          initial={false}
-          animate={{ opacity: idleOk ? (walking && hasStepSprites ? 0 : 1) : 0 }}
-          transition={{ duration: 0.15 }}
-        />
-        <motion.img
-          src={feet.leftStep}
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-          onLoad={() => setLeftOk(true)}
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-          className="absolute inset-0 h-full w-full select-none object-contain object-bottom"
-          initial={false}
-          animate={
-            walking && hasStepSprites
-              ? { opacity: [1, 1, 0, 0, 1, 1, 0, 0] }
-              : { opacity: 0 }
-          }
-          transition={
-            walking && hasStepSprites
-              ? { ...stepTransition, times: [0, 0.24, 0.25, 0.49, 0.5, 0.74, 0.75, 1] }
-              : { duration: 0.1 }
-          }
-        />
-        <motion.img
-          src={feet.rightStep}
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-          onLoad={() => setRightOk(true)}
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-          className="absolute inset-0 h-full w-full select-none object-contain object-bottom"
-          initial={false}
-          animate={
-            walking && hasStepSprites
-              ? { opacity: [0, 0, 1, 1, 0, 0, 1, 1] }
-              : { opacity: 0 }
-          }
-          transition={
-            walking && hasStepSprites
-              ? { ...stepTransition, times: [0, 0.24, 0.25, 0.49, 0.5, 0.74, 0.75, 1] }
-              : { duration: 0.1 }
-          }
-        />
-      </motion.div>
-    </div>
   );
 }
 
@@ -389,7 +221,7 @@ function SceneLayer({
           ? {
               scale: baseScale * cfg.walkScale,
               x: `${dir * cfg.walkShiftPct}%`,
-              // 4걸음 발디딤에 맞춘 헤드밥 (발 애니메이션과 동기화)
+              // 4걸음 발디딤 리듬의 헤드밥
               y: [0, -cfg.bobPx, 0, -cfg.bobPx, 0, -cfg.bobPx, 0, -cfg.bobPx, 0],
             }
           : { scale: baseScale, x: "0%", y: 0 }
@@ -463,9 +295,6 @@ export default function ForkScene({
           reduced={reduced}
         />
       </div>
-
-      {/* 1인칭 발 — 화면 하단 중앙 */}
-      <WalkingFeet walkSide={walkSide} reduced={reduced} />
 
       {/* 질문 + 선택지 오버레이 */}
       <motion.div
