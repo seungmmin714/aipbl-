@@ -3,13 +3,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useReducedMotion } from "framer-motion";
+import { AnimatePresence, useReducedMotion } from "framer-motion";
 import { calculateMBTI, Answer } from "@/lib/mbti";
 import questionsData from "@/data/questions.json";
 import ForkScene, {
-  WALK_ADVANCE_MS,
-  REDUCED_ADVANCE_MS,
+  TravelerCharacter,
+  CHARACTER_WALK_MS,
+  CAMERA_PAN_MS,
+  REDUCED_WALK_MS,
+  REDUCED_PAN_MS,
   type RoadSide,
+  type TravelerPhase,
 } from "./ForkScene";
 
 const STORAGE_KEY = "investMBTI_survey";
@@ -107,8 +111,12 @@ export default function SurveyPage() {
     return saved ? saved.answers : [];
   });
   const [isTransitioning, setIsTransitioning] = useState(false);
-  // 걷기 애니메이션 방향 (null이면 대기 상태)
+  // 캐릭터 상태: 대기 → 걷기(선택한 길로) → 카메라 팬(다음 장면으로) → 대기
+  const [phase, setPhase] = useState<TravelerPhase>("idle");
+  // 걷기 중 방향 — 선택 버튼 하이라이트용 (걷기 끝나면 null)
   const [walkSide, setWalkSide] = useState<RoadSide | null>(null);
+  // 카메라 팬 방향 — 장면 exit/enter 슬라이드용 (전환 종료까지 유지)
+  const [panSide, setPanSide] = useState<RoadSide | null>(null);
   // 연타 방지 보강 — 같은 프레임에 두 번 클릭돼도 전환 타이머는 한 번만 등록
   const advancingRef = useRef(false);
 
@@ -130,8 +138,8 @@ export default function SurveyPage() {
   }, []);
 
   /**
-   * 길(선택지) 선택 → 답변 저장 후 걷기 애니메이션 재생 → 자동으로 다음 문항 진행.
-   * 답변 누적/채점/완주 처리 로직은 기존 saveAnswer + handleNext와 동일하다.
+   * 길(선택지) 선택 → 답변 저장 → 캐릭터가 그 길로 걸어감 → 카메라 팬으로
+   * 다음 갈림길 장면이 이어져 들어옴. 답변 누적/채점/완주 로직은 기존과 동일하다.
    */
   const handleChoose = useCallback(
     (value: string, side: RoadSide) => {
@@ -145,15 +153,24 @@ export default function SurveyPage() {
         return [...filtered, { questionId: q.id, value }];
       });
       setWalkSide(side);
+      setPanSide(side);
+      setPhase("walk");
       setIsTransitioning(true);
 
-      const advanceMs = reduced ? REDUCED_ADVANCE_MS : WALK_ADVANCE_MS;
+      const walkMs = reduced ? REDUCED_WALK_MS : CHARACTER_WALK_MS;
+      const panMs = reduced ? REDUCED_PAN_MS : CAMERA_PAN_MS;
       window.setTimeout(() => {
-        advancingRef.current = false;
         if (currentIdx < totalQuestions - 1) {
+          // 걷기 완료 → 문항 교체와 동시에 카메라 팬 시작
           setCurrentIdx((prev) => prev + 1);
           setWalkSide(null);
-          setIsTransitioning(false);
+          setPhase("pan");
+          window.setTimeout(() => {
+            advancingRef.current = false;
+            setPanSide(null);
+            setPhase("idle");
+            setIsTransitioning(false);
+          }, panMs);
         } else {
           // 마지막 문항 → 결과 계산 (기존 handleNext의 완주 처리와 동일)
           const finalAnswers = answers.filter((a) => a.questionId !== q.id);
@@ -171,7 +188,7 @@ export default function SurveyPage() {
             router.push("/");
           }
         }
-      }, advanceMs);
+      }, walkMs);
     },
     [isTransitioning, reduced, currentIdx, totalQuestions, answers, q.id, router]
   );
@@ -184,22 +201,28 @@ export default function SurveyPage() {
     setTimeout(() => {
       setCurrentIdx((prev) => prev - 1);
       setIsTransitioning(false);
-    }, 250);
+    }, 300);
   }, [currentIdx, isTransitioning]);
 
   return (
     <div className="relative h-[100dvh] min-h-[560px] overflow-hidden bg-[#f4f5f9] font-body-md text-[#001a42]">
-      {/* 갈림길 장면 — 문항이 바뀌면 새 장면으로 리마운트되어 등장 애니메이션 재생 */}
-      <ForkScene
-        key={q.id}
-        question={q}
-        index={currentIdx}
-        total={totalQuestions}
-        selectedValue={selectedValue}
-        walkSide={walkSide}
-        isTransitioning={isTransitioning}
-        onChoose={handleChoose}
-      />
+      {/* 갈림길 장면 — 문항 교체 시 이전 장면은 팬 아웃, 새 장면은 같은 방향에서 팬 인 */}
+      <AnimatePresence initial={false}>
+        <ForkScene
+          key={q.id}
+          question={q}
+          index={currentIdx}
+          total={totalQuestions}
+          selectedValue={selectedValue}
+          walkSide={walkSide}
+          panSide={panSide}
+          isTransitioning={isTransitioning}
+          onChoose={handleChoose}
+        />
+      </AnimatePresence>
+
+      {/* 3인칭 캐릭터 — 장면 전환과 무관하게 유지되며 선택한 길로 걸어간다 */}
+      <TravelerCharacter phase={phase} side={panSide} reduced={reduced} />
 
       {/* 상단 플로팅 크롬 (장면 리마운트와 무관하게 유지) */}
       <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 pt-4">

@@ -5,29 +5,28 @@ import { motion, useReducedMotion } from "framer-motion";
 import { getSceneAssets, getSceneTheme, type SceneTheme } from "@/lib/scenes";
 
 /* ─── 전환 타이밍 상수 — page.tsx의 진행 로직(setTimeout)과 동기화되어야 한다 ─── */
-/** 선택 → 다음 문항 전환까지: 버튼 하이라이트(0.2s) + 카메라 전진(1.15s) + 화이트아웃 */
-export const WALK_ADVANCE_MS = 1500;
-/** prefers-reduced-motion 사용자용 단축 전환 */
-export const REDUCED_ADVANCE_MS = 420;
+/** 캐릭터가 선택한 길로 걸어가는 시간 */
+export const CHARACTER_WALK_MS = 1100;
+/** 카메라 팬 이동(장면 전환) 시간 */
+export const CAMERA_PAN_MS = 900;
+/** prefers-reduced-motion: 걷기 생략, 빠른 크로스페이드 */
+export const REDUCED_WALK_MS = 80;
+export const REDUCED_PAN_MS = 300;
 
 const PERSPECTIVE = 1200;
+const PAN_EASE: [number, number, number, number] = [0.45, 0.05, 0.25, 1];
 
-/* 레이어별 깊이(translateZ)와 걷기 애니메이션 배율.
-   전경일수록 크게/빠르게 움직여 패럴랙스 깊이감을 만든다.
-   bobPx: 걸음걸이(head-bob) 상하 흔들림 진폭 — 가까운 레이어일수록 크게 */
+/* 레이어별 깊이(translateZ)와 카메라 팬 시 이동량.
+   전경일수록 크게 움직여 패럴랙스 깊이감을 만든다. */
 const LAYER_CONFIG = {
-  background: { z: -420, walkScale: 1.2, walkShiftPct: 4, bobPx: 4 },
-  road: { z: -160, walkScale: 1.85, walkShiftPct: 10, bobPx: 7 },
-  foreground: { z: 40, walkScale: 2.3, walkShiftPct: 20, bobPx: 12 },
+  background: { z: -420, panXPct: 7, panYPct: 2 },
+  road: { z: -160, panXPct: 16, panYPct: 6 },
+  foreground: { z: 40, panXPct: 22, panYPct: 9 },
 } as const;
-
-/* 걷기 리듬 — 4걸음 발디딤(12% → 37% → 62% → 87%)에 맞춘 헤드밥 타이밍 */
-const STEP_DELAY = 0.18;
-const STEP_DURATION = 1.15;
-const HEADBOB_TIMES = [0, 0.12, 0.25, 0.37, 0.5, 0.62, 0.75, 0.87, 1];
 
 type LayerKind = keyof typeof LAYER_CONFIG;
 export type RoadSide = "left" | "right";
+export type TravelerPhase = "idle" | "walk" | "pan";
 
 export interface SurveyQuestion {
   id: string;
@@ -42,8 +41,10 @@ interface ForkSceneProps {
   total: number;
   /** 이전에 이 문항에 답했던 값 (이전 버튼으로 되돌아온 경우 하이라이트용) */
   selectedValue: string | null;
-  /** 걷기 애니메이션 진행 방향 (null이면 대기 상태) */
+  /** 걷기 중 선택된 방향 (버튼 하이라이트용 — 걷기 끝나면 null) */
   walkSide: RoadSide | null;
+  /** 카메라 팬 방향 (장면 exit/enter 슬라이드용 — 전환이 끝날 때까지 유지) */
+  panSide: RoadSide | null;
   isTransitioning: boolean;
   onChoose: (value: string, side: RoadSide) => void;
 }
@@ -69,7 +70,7 @@ function LayerImage({ src }: { src: string }) {
   );
 }
 
-/* ─── 플레이스홀더 아트 (단색 그라데이션 + 단순 SVG 도형) ─── */
+/* ─── 플레이스홀더 아트 (단색 그라데이션 + 단순 SVG 도형, 화이트&블루 톤) ─── */
 
 function BackgroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
   const skyId = `sky-${uid}`;
@@ -77,7 +78,7 @@ function BackgroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
     <svg
       className="absolute inset-0 h-full w-full"
       viewBox="0 0 800 1200"
-      // 화면 비율과 무관하게 구도 유지 (도로 레이어와 동일한 스트레치)
+      // 화면 비율과 무관하게 구도 유지 (전 레이어 동일한 스트레치)
       preserveAspectRatio="none"
       aria-hidden="true"
     >
@@ -88,23 +89,45 @@ function BackgroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
         </linearGradient>
       </defs>
       <rect width="800" height="1200" fill={`url(#${skyId})`} />
-      {/* 해/달 */}
-      <circle cx="580" cy="200" r="130" fill={theme.sun} opacity="0.35" />
-      <circle cx="580" cy="200" r="72" fill={theme.sun} />
+      {/* 해 */}
+      <circle cx="430" cy="190" r="120" fill={theme.sun} opacity="0.35" />
+      <circle cx="430" cy="190" r="66" fill={theme.sun} />
       {/* 구름 */}
-      <g fill="#ffffff" opacity="0.75">
-        <ellipse cx="190" cy="160" rx="95" ry="24" />
-        <ellipse cx="245" cy="138" rx="60" ry="18" />
-        <ellipse cx="620" cy="90" rx="70" ry="16" opacity="0.6" />
+      <g fill="#ffffff" opacity="0.8">
+        <ellipse cx="160" cy="140" rx="90" ry="22" />
+        <ellipse cx="215" cy="120" rx="55" ry="16" />
+        <ellipse cx="640" cy="170" rx="75" ry="18" opacity="0.7" />
       </g>
-      {/* 원경 능선 — 지평선(화면 약 32%, y≈380)에 맞춰 배치 */}
+      {/* 왼쪽: 산맥 (왼쪽 길의 목적지 느낌) */}
+      <g>
+        <polygon points="30,560 190,300 350,560" fill={theme.hillFar} />
+        <polygon points="150,560 280,370 410,560" fill={theme.hillNear} />
+        <polygon points="171,331 190,300 209,331 190,318" fill="#ffffff" opacity="0.9" />
+      </g>
+      {/* 오른쪽: 도시 실루엣 (오른쪽 길의 목적지 느낌) */}
+      <g>
+        <rect x="520" y="440" width="52" height="120" fill={theme.hillFar} />
+        <rect x="580" y="400" width="58" height="160" fill={theme.hillNear} />
+        <rect x="646" y="460" width="46" height="100" fill={theme.hillFar} />
+        <rect x="698" y="420" width="56" height="140" fill={theme.hillNear} />
+        <g fill="#ffffff" opacity="0.85">
+          <rect x="532" y="456" width="10" height="12" />
+          <rect x="550" y="456" width="10" height="12" />
+          <rect x="532" y="482" width="10" height="12" />
+          <rect x="594" y="416" width="10" height="12" />
+          <rect x="614" y="416" width="10" height="12" />
+          <rect x="594" y="444" width="10" height="12" />
+          <rect x="658" y="476" width="9" height="11" />
+          <rect x="712" y="436" width="10" height="12" />
+          <rect x="730" y="436" width="10" height="12" />
+          <rect x="712" y="464" width="10" height="12" />
+        </g>
+      </g>
+      {/* 지평선 부근 원경 능선 */}
       <path
-        d="M0 345 Q 130 280 260 335 Q 340 305 430 333 Q 560 285 680 332 Q 740 315 800 328 L 800 460 L 0 460 Z"
+        d="M0 530 Q 130 490 260 522 Q 400 495 540 524 Q 680 500 800 520 L 800 620 L 0 620 Z"
         fill={theme.hillFar}
-      />
-      <path
-        d="M0 382 Q 160 330 320 375 Q 470 338 620 372 Q 710 350 800 365 L 800 500 L 0 500 Z"
-        fill={theme.hillNear}
+        opacity="0.6"
       />
     </svg>
   );
@@ -115,38 +138,48 @@ function RoadArt({ theme }: { theme: SceneTheme }) {
     <svg
       className="absolute inset-0 h-full w-full"
       viewBox="0 0 800 1200"
-      // 화면 비율과 무관하게 항상 Y자 전체 구도가 보이도록 스트레치
       preserveAspectRatio="none"
       aria-hidden="true"
     >
-      {/* 들판 — 지평선을 화면 약 32% 지점에 고정 */}
-      <rect y="380" width="800" height="820" fill={theme.ground} />
-      {/* Y자 갈림길: 하단 중앙의 넓은 길(가까움)이 위로 갈수록 좁아지다
-          화면 42% 지점 분기점에서 좌상단/우상단 화면 끝까지 곡선으로 갈라진다 */}
+      {/* 들판 — 지평선 약 47% */}
+      <rect y="560" width="800" height="640" fill={theme.ground} />
+      {/* 3인칭 Y자 갈림길: 하단 중앙의 길이 화면 69% 지점 분기점에서
+          좌/우 화면 가장자리로 갈라진다 (캐릭터가 분기점 아래 서 있는 구도) */}
       <path
-        d="M 140 1200
-           C 230 900, 300 720, 330 640
-           C 250 560, 130 515, -40 478
-           L -20 402
-           C 130 440, 290 472, 400 510
-           C 510 472, 670 440, 820 402
-           L 840 478
-           C 670 515, 550 560, 470 640
-           C 500 720, 570 900, 660 1200
+        d="M 356 1200
+           C 362 1050, 372 920, 383 838
+           C 300 812, 180 780, -30 726
+           L -30 684
+           C 190 736, 320 768, 400 806
+           C 480 768, 610 736, 830 684
+           L 830 726
+           C 620 780, 500 812, 417 838
+           C 428 920, 438 1050, 444 1200
            Z"
         fill={theme.road}
         stroke={theme.roadEdge}
         strokeWidth="6"
         strokeLinejoin="round"
       />
-      {/* 중앙 차선 — 트렁크는 분기점 앞에서 끊기고, 두 갈래를 따라 화면 끝까지 이어진다 */}
+      {/* 중앙 차선 — 트렁크와 두 갈래를 따라 이어진다 */}
       <g stroke={theme.roadEdge} strokeLinecap="round" fill="none" opacity="0.6">
-        <path d="M 400 1180 L 400 700" strokeWidth="8" strokeDasharray="30 26" />
-        <path d="M 372 592 C 280 540, 150 505, 20 468" strokeWidth="6" strokeDasharray="22 20" />
-        <path d="M 428 592 C 520 540, 650 505, 780 468" strokeWidth="6" strokeDasharray="22 20" />
+        <path d="M 400 1180 L 400 870" strokeWidth="8" strokeDasharray="26 24" />
+        <path d="M 380 822 C 290 795, 180 765, 30 712" strokeWidth="6" strokeDasharray="20 18" />
+        <path d="M 420 822 C 510 795, 620 765, 770 712" strokeWidth="6" strokeDasharray="20 18" />
       </g>
-      {/* 분기점 위 수풀 */}
-      <ellipse cx="400" cy="478" rx="12" ry="7" fill={theme.bushDark} />
+      {/* 들판 위 소품 — 왼쪽 침엽수, 오른쪽 둥근 수풀 (참고 구도) */}
+      <g fill={theme.bushDark}>
+        <polygon points="130,700 155,640 180,700" />
+        <rect x="150" y="700" width="10" height="16" fill={theme.roadEdge} />
+        <polygon points="215,660 235,612 255,660" />
+        <rect x="231" y="660" width="8" height="13" fill={theme.roadEdge} />
+      </g>
+      <g fill={theme.bush}>
+        <circle cx="668" cy="768" r="26" />
+        <circle cx="706" cy="778" r="17" />
+      </g>
+      {/* 분기점 안쪽 수풀 */}
+      <ellipse cx="400" cy="792" rx="11" ry="6" fill={theme.bushDark} />
     </svg>
   );
 }
@@ -157,7 +190,6 @@ function ForegroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
     <svg
       className="absolute inset-0 h-full w-full"
       viewBox="0 0 800 1200"
-      // 화면 비율과 무관하게 구도 유지 (도로 레이어와 동일한 스트레치)
       preserveAspectRatio="none"
       aria-hidden="true"
     >
@@ -175,73 +207,140 @@ function ForegroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
       <g fill={theme.bush}>
         <ellipse cx="-20" cy="1230" rx="200" ry="130" />
         <ellipse cx="820" cy="1235" rx="210" ry="140" />
-        <ellipse cx="180" cy="1265" rx="120" ry="70" />
-        <ellipse cx="640" cy="1268" rx="130" ry="75" />
       </g>
       {/* 잔돌 */}
-      <ellipse cx="250" cy="1180" rx="26" ry="12" fill={theme.roadEdge} opacity="0.55" />
-      <ellipse cx="565" cy="1170" rx="20" ry="10" fill={theme.roadEdge} opacity="0.5" />
+      <ellipse cx="250" cy="1150" rx="24" ry="11" fill={theme.roadEdge} opacity="0.5" />
+      <ellipse cx="580" cy="1130" rx="18" ry="9" fill={theme.roadEdge} opacity="0.45" />
       {/* 하단 비네트 */}
-      <rect y="1050" width="800" height="150" fill={`url(#${vignetteId})`} />
+      <rect y="1060" width="800" height="140" fill={`url(#${vignetteId})`} />
     </svg>
   );
 }
 
-/* ─── 2.5D 레이어 — translateZ 깊이 + 걷기 시 레이어별 확대/이동 ─── */
+/* ─── 3인칭 캐릭터 (page.tsx에서 장면 위에 렌더링, 장면 전환과 무관하게 유지) ─── */
+
+/* 캐릭터 위치(뷰포트 기준) — 갈림길 분기점 아래 = 대기 위치 */
+const CHAR_BASE = { x: "50vw", y: "70vh", scale: 1 };
+const CHAR_TARGET: Record<RoadSide, { x: string; y: string; scale: number }> = {
+  left: { x: "20vw", y: "60vh", scale: 0.8 },
+  right: { x: "80vw", y: "60vh", scale: 0.8 },
+};
+
+export function TravelerCharacter({
+  phase,
+  side,
+  reduced,
+}: {
+  phase: TravelerPhase;
+  side: RoadSide | null;
+  reduced: boolean;
+}) {
+  const walking = phase === "walk" && side !== null && !reduced;
+  const target = walking && side ? CHAR_TARGET[side] : CHAR_BASE;
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10" aria-hidden="true">
+      <motion.div
+        className="absolute left-0 top-0"
+        initial={false}
+        animate={{
+          x: target.x,
+          y: target.y,
+          scale: target.scale,
+          // 걸을 때 좌우로 갸우뚱거리는 걸음 wobble
+          rotate: walking ? [0, -4, 4, -4, 4, 0] : 0,
+        }}
+        transition={
+          walking
+            ? {
+                duration: CHARACTER_WALK_MS / 1000,
+                ease: "easeInOut",
+                rotate: {
+                  duration: CHARACTER_WALK_MS / 1000,
+                  times: [0, 0.2, 0.4, 0.6, 0.8, 1],
+                },
+              }
+            : phase === "pan" && !reduced
+              ? { duration: CAMERA_PAN_MS / 1000, ease: PAN_EASE }
+              : { duration: reduced ? 0 : 0.3 }
+        }
+      >
+        {/* 기준점(x/y)이 발끝이 되도록 위로 올려서 그린다 */}
+        <div className="relative -translate-x-1/2 -translate-y-full">
+          {/* 고민 말풍선 — 대기 상태에서만 표시 */}
+          <motion.div
+            className="absolute -right-10 -top-10 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-base font-black text-[#004be6] shadow-md"
+            initial={false}
+            animate={{ opacity: phase === "idle" ? 1 : 0, y: phase === "idle" ? [0, -3, 0] : 0 }}
+            transition={{
+              opacity: { duration: 0.25 },
+              y: reduced ? { duration: 0 } : { duration: 2.2, repeat: Infinity, ease: "easeInOut" },
+            }}
+          >
+            ?
+          </motion.div>
+          {/* 미니멀 실루엣 캐릭터 (네이비, 화이트&블루 톤) */}
+          <svg width="46" height="64" viewBox="0 0 46 64" className="drop-shadow-md">
+            <circle cx="23" cy="10" r="9" fill="#2b3a67" />
+            <path
+              d="M 23 20 C 32 20, 36 27, 36 38 L 34 62 L 27 62 L 26 44 L 20 44 L 19 62 L 12 62 L 10 38 C 10 27, 14 20, 23 20 Z"
+              fill="#2b3a67"
+            />
+          </svg>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+/* ─── 2.5D 레이어 — translateZ 깊이 + 카메라 팬 시 레이어별 차등 이동(패럴랙스) ─── */
 
 function SceneLayer({
   kind,
   theme,
   uid,
   imageSrc,
-  walkSide,
+  panSide,
   reduced,
 }: {
   kind: LayerKind;
   theme: SceneTheme;
   uid: string;
   imageSrc: string;
-  walkSide: RoadSide | null;
+  panSide: RoadSide | null;
   reduced: boolean;
 }) {
   const cfg = LAYER_CONFIG[kind];
   // translateZ로 뒤로 밀린 만큼 확대해서 화면을 가득 채운다 (원근 보정)
   const baseScale = (PERSPECTIVE - cfg.z) / PERSPECTIVE;
-  const walking = walkSide !== null && !reduced;
-  // 왼쪽 길로 걸어가면 카메라가 왼쪽으로 이동 → 장면은 오른쪽(+x)으로 흐른다
-  const dir = walkSide === "left" ? 1 : -1;
+  const panning = panSide !== null && !reduced;
+  // 캐릭터가 왼쪽 길로 가면 카메라도 왼쪽으로 → 세계는 오른쪽(+x)·아래(+y)로 흐른다
+  const dir = panSide === "left" ? 1 : -1;
+  const panDur = (reduced ? REDUCED_PAN_MS : CAMERA_PAN_MS) / 1000;
+
+  // 부모(장면 루트)의 variant 라벨을 상속받아 enter/center/exit를 재생한다
+  const variants = {
+    enter: panning
+      ? { x: `${-dir * cfg.panXPct}%`, y: `${-cfg.panYPct}%`, scale: baseScale }
+      : { x: "0%", y: "0%", scale: baseScale },
+    center: {
+      x: "0%",
+      y: "0%",
+      scale: baseScale,
+      transition: { duration: panDur, ease: PAN_EASE },
+    },
+    exit: panning
+      ? {
+          x: `${dir * cfg.panXPct}%`,
+          y: `${cfg.panYPct}%`,
+          scale: baseScale,
+          transition: { duration: panDur, ease: PAN_EASE },
+        }
+      : { x: "0%", y: "0%", scale: baseScale },
+  };
 
   return (
-    <motion.div
-      className="absolute -inset-[12%]"
-      style={{ z: cfg.z }}
-      initial={false}
-      animate={
-        walking
-          ? {
-              scale: baseScale * cfg.walkScale,
-              x: `${dir * cfg.walkShiftPct}%`,
-              // 4걸음 발디딤 리듬의 헤드밥
-              y: [0, -cfg.bobPx, 0, -cfg.bobPx, 0, -cfg.bobPx, 0, -cfg.bobPx, 0],
-            }
-          : { scale: baseScale, x: "0%", y: 0 }
-      }
-      transition={
-        walking
-          ? {
-              delay: STEP_DELAY,
-              duration: STEP_DURATION,
-              ease: [0.5, 0, 0.3, 1],
-              y: {
-                delay: STEP_DELAY,
-                duration: STEP_DURATION,
-                times: HEADBOB_TIMES,
-                ease: "easeInOut",
-              },
-            }
-          : { duration: 0 }
-      }
-    >
+    <motion.div className="absolute -inset-[12%]" style={{ z: cfg.z }} variants={variants}>
       {kind === "background" && <BackgroundArt theme={theme} uid={uid} />}
       {kind === "road" && <RoadArt theme={theme} />}
       {kind === "foreground" && <ForegroundArt theme={theme} uid={uid} />}
@@ -250,7 +349,7 @@ function SceneLayer({
   );
 }
 
-/* ─── 갈림길 장면 (문항 1개 = 풀스크린 장면 1개) ─── */
+/* ─── 갈림길 장면 (문항 1개 = 풀스크린 장면 1개, AnimatePresence로 팬 전환) ─── */
 
 export default function ForkScene({
   question,
@@ -258,6 +357,7 @@ export default function ForkScene({
   total,
   selectedValue,
   walkSide,
+  panSide,
   isTransitioning,
   onChoose,
 }: ForkSceneProps) {
@@ -265,9 +365,30 @@ export default function ForkScene({
   const theme = getSceneTheme(question.axis);
   const assets = getSceneAssets(question.id);
   const walking = walkSide !== null;
+  const panning = panSide !== null && !reduced;
+  const panDur = (reduced ? REDUCED_PAN_MS : CAMERA_PAN_MS) / 1000;
+
+  // 장면 루트: 팬 이동은 레이어가 담당하고, 루트는 크로스페이드만 담당
+  const rootVariants = {
+    enter: { opacity: panning ? 0.35 : 0 },
+    center: { opacity: 1, transition: { duration: reduced ? 0.25 : 0.5, ease: "easeOut" as const } },
+    exit: {
+      opacity: 0,
+      transition: panning
+        ? { duration: panDur, ease: "easeIn" as const, delay: 0.1 }
+        : { duration: 0.25 },
+    },
+  };
 
   return (
-    <div className="absolute inset-0 overflow-hidden" style={{ perspective: PERSPECTIVE }}>
+    <motion.div
+      className="absolute inset-0 overflow-hidden"
+      style={{ perspective: PERSPECTIVE }}
+      variants={rootVariants}
+      initial="enter"
+      animate="center"
+      exit="exit"
+    >
       {/* 2.5D 카메라 공간 */}
       <div className="absolute inset-0" style={{ transformStyle: "preserve-3d" }}>
         <SceneLayer
@@ -275,7 +396,7 @@ export default function ForkScene({
           theme={theme}
           uid={`${question.id}-bg`}
           imageSrc={assets.background}
-          walkSide={walkSide}
+          panSide={panSide}
           reduced={reduced}
         />
         <SceneLayer
@@ -283,7 +404,7 @@ export default function ForkScene({
           theme={theme}
           uid={`${question.id}-road`}
           imageSrc={assets.road}
-          walkSide={walkSide}
+          panSide={panSide}
           reduced={reduced}
         />
         <SceneLayer
@@ -291,27 +412,27 @@ export default function ForkScene({
           theme={theme}
           uid={`${question.id}-fg`}
           imageSrc={assets.foreground}
-          walkSide={walkSide}
+          panSide={panSide}
           reduced={reduced}
         />
       </div>
 
       {/* 질문 + 선택지 오버레이 */}
-      <motion.div
-        className="absolute inset-0 z-10"
-        animate={{ opacity: isTransitioning ? 0 : 1 }}
-        transition={{
-          duration: reduced ? 0.15 : 0.4,
-          delay: isTransitioning && walking && !reduced ? 0.25 : 0,
-        }}
-      >
-        {/* 질문 텍스트 — 분기점 위 하늘 영역 */}
+      <div className="absolute inset-0 z-20">
+        {/* 질문 텍스트 — 하늘 영역 상단 중앙 */}
         <motion.div
           aria-live="polite"
           className="absolute inset-x-0 top-[8%] flex flex-col items-center gap-3 px-6 text-center"
           initial={{ opacity: 0, y: reduced ? 0 : 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: reduced ? 0 : 0.15, duration: reduced ? 0.2 : 0.6, ease: "easeOut" }}
+          animate={{
+            opacity: isTransitioning ? 0 : 1,
+            y: isTransitioning ? (reduced ? 0 : 14) : 0,
+          }}
+          transition={
+            isTransitioning
+              ? { duration: reduced ? 0.15 : 0.35 }
+              : { delay: reduced ? 0 : 0.15, duration: reduced ? 0.2 : 0.6, ease: "easeOut" }
+          }
         >
           <span className="inline-block rounded-full bg-white/75 px-3 py-1 text-xs font-bold tracking-wide text-[#004be6] shadow-sm backdrop-blur-md">
             Question {String(index + 1).padStart(2, "0")}
@@ -326,9 +447,9 @@ export default function ForkScene({
           </p>
         </motion.div>
 
-        {/* 선택지 버튼 — 좌상단/우상단으로 뻗는 두 갈래 길 위에 오버레이 */}
+        {/* 선택지 버튼 — 좌/우로 갈라지는 길 위에 오버레이 */}
         <div
-          className="absolute inset-x-0 top-[30%] flex justify-between gap-3 px-4 sm:px-8"
+          className="absolute inset-x-0 top-[42%] flex justify-between gap-3 px-4 sm:px-8"
           role="radiogroup"
           aria-label={question.text}
         >
@@ -352,13 +473,26 @@ export default function ForkScene({
                   isTransitioning ? "pointer-events-none" : ""
                 }`}
                 initial={{ opacity: 0, y: reduced ? 0 : 34 }}
-                animate={{ opacity: 1, y: 0, scale: isChosen && !reduced ? 1.07 : 1 }}
-                transition={{
-                  delay: reduced ? 0 : side === "left" ? 0.3 : 0.42,
-                  duration: reduced ? 0.2 : 0.6,
-                  ease: "easeOut",
-                  scale: { delay: 0, duration: 0.18 },
+                animate={{
+                  opacity: isTransitioning ? 0 : 1,
+                  y: isTransitioning ? (reduced ? 0 : 14) : 0,
+                  scale: isChosen && !reduced ? 1.07 : 1,
                 }}
+                transition={
+                  isTransitioning
+                    ? {
+                        // 선택 하이라이트가 잠깐 보이도록 페이드는 살짝 늦게
+                        duration: reduced ? 0.15 : 0.35,
+                        delay: reduced ? 0 : 0.3,
+                        scale: { delay: 0, duration: 0.18 },
+                      }
+                    : {
+                        delay: reduced ? 0 : side === "left" ? 0.3 : 0.42,
+                        duration: reduced ? 0.2 : 0.6,
+                        ease: "easeOut",
+                        scale: { delay: 0, duration: 0.18 },
+                      }
+                }
                 whileTap={isTransitioning ? undefined : { scale: 0.97 }}
               >
                 <span
@@ -381,24 +515,7 @@ export default function ForkScene({
             );
           })}
         </div>
-      </motion.div>
-
-      {/* 화이트아웃 베일 — 장면 전환 크로스페이드 (걷기 시 블러와 함께 밝아진다) */}
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-20 bg-white"
-        initial={{ opacity: 1 }}
-        animate={{
-          opacity: isTransitioning ? 1 : 0,
-          backdropFilter: walking && !reduced ? "blur(7px)" : "blur(0px)",
-        }}
-        transition={
-          isTransitioning
-            ? walking
-              ? { delay: reduced ? 0 : 0.6, duration: reduced ? 0.25 : 0.6, ease: "easeIn" }
-              : { duration: 0.22 }
-            : { duration: reduced ? 0.25 : 0.45, ease: "easeOut" }
-        }
-      />
-    </div>
+      </div>
+    </motion.div>
   );
 }
