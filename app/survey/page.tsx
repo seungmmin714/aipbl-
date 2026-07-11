@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { calculateMBTI, Answer, TOTAL_QUESTIONS } from "@/lib/mbti";
+import { useReducedMotion } from "framer-motion";
+import { calculateMBTI, Answer } from "@/lib/mbti";
 import questionsData from "@/data/questions.json";
+import ForkScene, {
+  WALK_ADVANCE_MS,
+  REDUCED_ADVANCE_MS,
+  type RoadSide,
+} from "./ForkScene";
 
 const STORAGE_KEY = "investMBTI_survey";
 const PARTICIPANT_KEY = "investMBTI_participant";
@@ -89,6 +95,7 @@ function clearSurveyState() {
 
 export default function SurveyPage() {
   const router = useRouter();
+  const reduced = !!useReducedMotion();
 
   // sessionStorage에서 복원 (DEF-06)
   const [currentIdx, setCurrentIdx] = useState(() => {
@@ -100,7 +107,10 @@ export default function SurveyPage() {
     return saved ? saved.answers : [];
   });
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [direction, setDirection] = useState<"next" | "prev">("next");
+  // 걷기 애니메이션 방향 (null이면 대기 상태)
+  const [walkSide, setWalkSide] = useState<RoadSide | null>(null);
+  // 연타 방지 보강 — 같은 프레임에 두 번 클릭돼도 전환 타이머는 한 번만 등록
+  const advancingRef = useRef(false);
 
   const totalQuestions = questionsData.length;
   const q = questionsData[currentIdx];
@@ -119,52 +129,57 @@ export default function SurveyPage() {
     trackStart();
   }, []);
 
-  const saveAnswer = useCallback(
-    (value: string) => {
-      if (isTransitioning) return; // 전환 중 클릭 방지 (TC-13)
+  /**
+   * 길(선택지) 선택 → 답변 저장 후 걷기 애니메이션 재생 → 자동으로 다음 문항 진행.
+   * 답변 누적/채점/완주 처리 로직은 기존 saveAnswer + handleNext와 동일하다.
+   */
+  const handleChoose = useCallback(
+    (value: string, side: RoadSide) => {
+      // DEF-01/TC-13: 전환 중 클릭 방지
+      if (isTransitioning || advancingRef.current) return;
+      advancingRef.current = true;
+
+      // 답변 저장 — 문항별 1개로 교체 저장 (기존 로직 유지)
       setAnswers((prev) => {
         const filtered = prev.filter((a) => a.questionId !== q.id);
         return [...filtered, { questionId: q.id, value }];
       });
+      setWalkSide(side);
+      setIsTransitioning(true);
+
+      const advanceMs = reduced ? REDUCED_ADVANCE_MS : WALK_ADVANCE_MS;
+      window.setTimeout(() => {
+        advancingRef.current = false;
+        if (currentIdx < totalQuestions - 1) {
+          setCurrentIdx((prev) => prev + 1);
+          setWalkSide(null);
+          setIsTransitioning(false);
+        } else {
+          // 마지막 문항 → 결과 계산 (기존 handleNext의 완주 처리와 동일)
+          const finalAnswers = answers.filter((a) => a.questionId !== q.id);
+          finalAnswers.push({ questionId: q.id, value });
+
+          try {
+            const result = calculateMBTI(finalAnswers);
+            clearSurveyState(); // 완주 시 sessionStorage 정리 (TC-20)
+            trackComplete(); // 완료 시각 기록 (participantId는 유지 — 결과/피드백 연결용)
+            router.push(`/result/${result.code}`);
+          } catch (err) {
+            console.error("채점 오류:", err);
+            // 에러 발생 시에도 가능한 코드로 이동
+            clearSurveyState();
+            router.push("/");
+          }
+        }
+      }, advanceMs);
     },
-    [isTransitioning, q.id]
+    [isTransitioning, reduced, currentIdx, totalQuestions, answers, q.id, router]
   );
 
-  const handleNext = useCallback(() => {
-    // DEF-01: isTransitioning 가드 추가 — 연타 방지
-    if (!selectedValue || isTransitioning) return;
-
-    if (currentIdx < totalQuestions - 1) {
-      setDirection("next");
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setCurrentIdx((prev) => prev + 1);
-        setIsTransitioning(false);
-      }, 250);
-    } else {
-      // 마지막 문항 → 결과 계산
-      const finalAnswers = answers.filter((a) => a.questionId !== q.id);
-      finalAnswers.push({ questionId: q.id, value: selectedValue });
-
-      try {
-        const result = calculateMBTI(finalAnswers);
-        clearSurveyState(); // 완주 시 sessionStorage 정리 (TC-20)
-        trackComplete(); // 완료 시각 기록 (participantId는 유지 — 결과/피드백 연결용)
-        router.push(`/result/${result.code}`);
-      } catch (err) {
-        console.error("채점 오류:", err);
-        // 에러 발생 시에도 가능한 코드로 이동
-        clearSurveyState();
-        router.push("/");
-      }
-    }
-  }, [selectedValue, isTransitioning, currentIdx, totalQuestions, answers, q.id, router]);
-
   const handlePrev = useCallback(() => {
-    // DEF-01: isTransitioning 가드 추가
-    if (currentIdx <= 0 || isTransitioning) return;
+    // DEF-01: isTransitioning 가드
+    if (currentIdx <= 0 || isTransitioning || advancingRef.current) return;
 
-    setDirection("prev");
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentIdx((prev) => prev - 1);
@@ -173,39 +188,51 @@ export default function SurveyPage() {
   }, [currentIdx, isTransitioning]);
 
   return (
-    <div className="min-h-screen bg-[#f4f5f9] text-[#001a42] flex flex-col font-body-md relative overflow-x-hidden">
-      {/* Top Header App Bar */}
-      <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-white border-b border-slate-100/80 shadow-sm">
-        <div className="flex items-center text-[#004be6] hover:opacity-80">
-          <Link href="/">
-            <span className="material-symbols-outlined text-2xl font-light" aria-hidden="true">arrow_back</span>
-          </Link>
-        </div>
-        <span className="font-extrabold text-[#004be6] text-xl tracking-tight">Invest-Type</span>
-        <div className="flex items-center text-[#004be6]">
-          <span className="material-symbols-outlined text-2xl font-light" aria-hidden="true">help_outline</span>
-        </div>
-      </header>
+    <div className="relative h-[100dvh] min-h-[560px] overflow-hidden bg-[#f4f5f9] font-body-md text-[#001a42]">
+      {/* 갈림길 장면 — 문항이 바뀌면 새 장면으로 리마운트되어 등장 애니메이션 재생 */}
+      <ForkScene
+        key={q.id}
+        question={q}
+        index={currentIdx}
+        total={totalQuestions}
+        selectedValue={selectedValue}
+        walkSide={walkSide}
+        isTransitioning={isTransitioning}
+        onChoose={handleChoose}
+      />
 
-      {/* Main Content Canvas */}
-      <main className="flex-grow w-full max-w-md mx-auto px-4 pt-20 pb-8 flex flex-col justify-between min-h-[600px] z-10">
-        
-        {/* Progress & Badge Indicator */}
-        <div className="flex flex-col gap-3 mt-4 w-full">
-          <div className="flex justify-between items-center w-full">
-            {/* Pill Badge: Question XX */}
-            <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#e8edfc] text-[#004be6] tracking-wide">
-              Question {String(currentIdx + 1).padStart(2, "0")}
-            </span>
-            {/* Progress Text */}
-            <span className="text-xs text-slate-500 font-semibold">
-              진행률 {currentIdx + 1}/{totalQuestions}
-            </span>
-          </div>
+      {/* 상단 플로팅 크롬 (장면 리마운트와 무관하게 유지) */}
+      <div className="absolute inset-x-0 top-0 z-30 flex items-center justify-between px-4 pt-4">
+        <Link
+          href="/"
+          aria-label="홈으로 나가기"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-white/70 bg-white/80 text-slate-600 shadow backdrop-blur-md transition-colors hover:bg-white"
+        >
+          <span className="material-symbols-outlined text-xl" aria-hidden="true">
+            home
+          </span>
+        </Link>
+        <span className="rounded-full border border-white/70 bg-white/70 px-3 py-1.5 text-sm font-extrabold tracking-tight text-[#004be6] shadow backdrop-blur-md">
+          Invest-Type
+        </span>
+      </div>
 
-          {/* Progress Bar (DEF-19: role="progressbar" 추가) */}
+      {/* 하단 진행도 바 — 현재 문항/전체 표시 (DEF-19: role="progressbar" 유지) */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 bg-gradient-to-t from-black/15 to-transparent px-4 pb-5 pt-10">
+        <div className="pointer-events-auto mx-auto flex w-full max-w-md items-center gap-3">
+          <button
+            type="button"
+            onClick={handlePrev}
+            disabled={currentIdx === 0 || isTransitioning}
+            aria-label="이전 문항으로"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/70 bg-white/85 text-slate-600 shadow backdrop-blur-md transition-colors hover:bg-white disabled:pointer-events-none disabled:opacity-30"
+          >
+            <span className="material-symbols-outlined text-xl" aria-hidden="true">
+              arrow_back
+            </span>
+          </button>
           <div
-            className="w-full h-2 bg-slate-200/60 rounded-full overflow-hidden relative"
+            className="relative h-2.5 flex-1 overflow-hidden rounded-full bg-white/50 shadow-inner"
             role="progressbar"
             aria-valuenow={currentIdx + 1}
             aria-valuemin={1}
@@ -213,100 +240,17 @@ export default function SurveyPage() {
             aria-label={`진행률: ${totalQuestions}문항 중 ${currentIdx + 1}번째`}
           >
             <div
-              className="h-full bg-gradient-to-r from-[#004be6] to-[#06b6d4] rounded-full transition-all duration-300 ease-out"
+              className="h-full rounded-full bg-gradient-to-r from-[#004be6] to-[#06b6d4] transition-all duration-300 ease-out"
               style={{
                 width: `${((currentIdx + 1) / totalQuestions) * 100}%`,
               }}
             ></div>
           </div>
+          <span className="shrink-0 rounded-full bg-white/75 px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm backdrop-blur-md">
+            {currentIdx + 1} / {totalQuestions}
+          </span>
         </div>
-
-        {/* Question Area — aria-live로 문항 전환 시 낭독 (DEF-19) */}
-        <div
-          aria-live="polite"
-          className={`flex-grow flex flex-col justify-center my-6 transition-all duration-250 ${
-            isTransitioning
-              ? direction === "next"
-                ? "opacity-0 translate-x-8"
-                : "opacity-0 -translate-x-8"
-              : "opacity-100 translate-x-0"
-          }`}
-        >
-          {/* Question Text */}
-          <h2 className="text-xl md:text-2xl font-black text-slate-800 leading-snug text-left mb-2 break-keep">
-            Q{currentIdx + 1}. {q.text}
-          </h2>
-          {/* Subtext instruction */}
-          <p className="text-slate-400 text-xs md:text-sm font-semibold text-left mb-8">
-            당신의 실제 투자 성향을 가장 잘 나타내는 항목을 선택해 주세요.
-          </p>
-
-          {/* Binary Options (DEF-19: role="radiogroup" 추가) */}
-          <div className="flex flex-col gap-3 w-full" role="radiogroup" aria-label={q.axisTitle}>
-            {q.options.map((opt, idx) => {
-              const isSelected = selectedValue === opt.value;
-              return (
-                <button
-                  key={`${q.id}-${idx}`}
-                  onClick={() => saveAnswer(opt.value)}
-                  role="radio"
-                  aria-checked={isSelected}
-                  disabled={isTransitioning}
-                  className={`rounded-2xl p-5 flex items-center justify-between text-left transition-all duration-200 border-2 w-full ${
-                    isSelected
-                      ? "border-[#004be6] bg-[#f0f4ff] shadow-sm"
-                      : "border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300"
-                  } ${isTransitioning ? "pointer-events-none" : ""}`}
-                >
-                  {/* Option Text */}
-                  <span
-                    className={`font-semibold text-sm md:text-base leading-relaxed pr-4 ${
-                      isSelected ? "text-[#004be6]" : "text-slate-700"
-                    }`}
-                  >
-                    {opt.label}
-                  </span>
-
-                  {/* Selector Circle */}
-                  <div className="flex-shrink-0">
-                    {isSelected ? (
-                      <div className="w-6 h-6 bg-[#004be6] rounded-full flex items-center justify-center text-white shadow-inner">
-                        <span className="material-symbols-outlined text-[16px] font-bold" aria-hidden="true">check</span>
-                      </div>
-                    ) : (
-                      <div className="w-6 h-6 border-2 border-slate-200 rounded-full"></div>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Action Buttons (Bottom) — DEF-01: disabled={isTransitioning} 추가 */}
-        <div className="flex gap-4 w-full mt-auto pt-4 border-t border-slate-100">
-          <button
-            onClick={handlePrev}
-            disabled={currentIdx === 0 || isTransitioning}
-            className="w-[30%] py-4 bg-white border border-slate-200 text-slate-500 rounded-2xl font-bold flex items-center justify-center hover:bg-slate-50 transition-all text-sm disabled:opacity-30 disabled:pointer-events-none"
-          >
-            이전
-          </button>
-          <button
-            onClick={handleNext}
-            disabled={!selectedValue || isTransitioning}
-            className={`w-[70%] py-4 rounded-2xl font-bold flex items-center justify-center gap-1.5 transition-all text-sm ${
-              selectedValue && !isTransitioning
-                ? "bg-[#004be6] text-white hover:bg-[#003cb3] shadow-md"
-                : "bg-slate-200 text-slate-400 cursor-not-allowed"
-            }`}
-          >
-            <span>{currentIdx === totalQuestions - 1 ? "결과 보기" : "다음"}</span>
-            <span className="material-symbols-outlined text-base" aria-hidden="true">arrow_forward</span>
-          </button>
-        </div>
-
-      </main>
+      </div>
     </div>
   );
 }
