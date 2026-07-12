@@ -5,8 +5,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { getSceneAssets, getSceneTheme, type SceneTheme } from "@/lib/scenes";
 
 /* ─── 전환 타이밍 상수 — page.tsx의 진행 로직(setTimeout)과 동기화되어야 한다 ─── */
-/** 캐릭터가 선택한 길로 걸어가는 시간 */
-export const CHARACTER_WALK_MS = 1100;
+/** 캐릭터가 선택한 길로 걸어가는 시간 (트렁크 직진 → 분기점에서 갈래길로 진입) */
+export const CHARACTER_WALK_MS = 1400;
 /** 카메라 팬 이동(장면 전환) 시간 */
 export const CAMERA_PAN_MS = 900;
 /** prefers-reduced-motion: 걷기 생략, 빠른 크로스페이드 */
@@ -144,18 +144,18 @@ function RoadArt({ theme }: { theme: SceneTheme }) {
     >
       {/* 들판 — 지평선 약 47% */}
       <rect y="560" width="800" height="640" fill={theme.ground} />
-      {/* 3인칭 Y자 갈림길: 하단 중앙의 길이 화면 69% 지점 분기점에서
-          좌/우 화면 가장자리로 갈라진다 (캐릭터가 분기점 아래 서 있는 구도) */}
+      {/* 3인칭 Y자 갈림길: 하단 중앙의 긴 길이 화면 약 58% 지점 분기점에서
+          좌/우 화면 가장자리로 갈라진다 (캐릭터가 트렁크를 따라 걸어 올라가는 구도) */}
       <path
-        d="M 356 1200
-           C 362 1050, 372 920, 383 838
-           C 300 812, 180 780, -30 726
-           L -30 684
-           C 190 736, 320 768, 400 806
-           C 480 768, 610 736, 830 684
-           L 830 726
-           C 620 780, 500 812, 417 838
-           C 428 920, 438 1050, 444 1200
+        d="M 352 1200
+           C 358 1030, 370 850, 381 730
+           C 300 706, 180 676, -30 636
+           L -30 596
+           C 180 648, 310 676, 400 690
+           C 490 676, 620 648, 830 596
+           L 830 636
+           C 620 676, 500 706, 419 730
+           C 430 850, 442 1030, 448 1200
            Z"
         fill={theme.road}
         stroke={theme.roadEdge}
@@ -165,53 +165,21 @@ function RoadArt({ theme }: { theme: SceneTheme }) {
       />
       {/* 길 위 자갈 점 */}
       <g fill={theme.roadEdge} opacity="0.55">
-        <ellipse cx="394" cy="930" rx="7" ry="4" />
-        <ellipse cx="409" cy="1005" rx="5" ry="3" />
-        <ellipse cx="391" cy="1080" rx="6" ry="3.5" />
-        <ellipse cx="406" cy="1150" rx="5" ry="3" />
-        <ellipse cx="300" cy="794" rx="5" ry="3" />
-        <ellipse cx="505" cy="794" rx="5" ry="3" />
+        <ellipse cx="394" cy="830" rx="7" ry="4" />
+        <ellipse cx="409" cy="930" rx="5" ry="3" />
+        <ellipse cx="391" cy="1030" rx="6" ry="3.5" />
+        <ellipse cx="406" cy="1130" rx="5" ry="3" />
+        <ellipse cx="295" cy="688" rx="5" ry="3" />
+        <ellipse cx="505" cy="688" rx="5" ry="3" />
       </g>
-      {/* 나무 이정표 — 왼쪽 길(숲길) / 오른쪽 길(도시) */}
-      <g>
-        <rect x="252" y="790" width="10" height="88" rx="2" fill={theme.treeTrunk} />
-        <g>
-          <polygon points="181,795 165,807 181,819" fill={theme.wood} />
-          <rect x="180" y="795" width="62" height="24" rx="3" fill={theme.wood} />
-          <text
-            x="211"
-            y="812"
-            textAnchor="middle"
-            fontSize="14"
-            fontWeight="700"
-            fill="#fdf3e0"
-          >
-            숲길
-          </text>
-        </g>
-        <g>
-          <rect x="256" y="831" width="62" height="24" rx="3" fill={theme.wood} />
-          <polygon points="317,836 333,848 317,860" fill={theme.wood} />
-          <text
-            x="287"
-            y="848"
-            textAnchor="middle"
-            fontSize="14"
-            fontWeight="700"
-            fill="#fdf3e0"
-          >
-            도시
-          </text>
-        </g>
-      </g>
-      {/* 들판 위 소품 — 왼쪽 침엽수, 오른쪽 둥근 수풀 (참고 구도) */}
+      {/* 들판 위 소품 — 왼쪽 침엽수(갈래길 아래), 오른쪽 둥근 수풀 */}
       <g fill={theme.bushDark}>
-        <polygon points="130,700 155,640 180,700" />
-        <rect x="150" y="700" width="10" height="16" fill={theme.treeTrunk} />
-        <polygon points="215,660 235,612 255,660" />
-        <rect x="231" y="660" width="8" height="13" fill={theme.treeTrunk} />
-        <polygon points="60,760 90,692 120,760" />
-        <rect x="84" y="760" width="11" height="18" fill={theme.treeTrunk} />
+        <polygon points="125,780 150,720 175,780" />
+        <rect x="145" y="780" width="10" height="16" fill={theme.treeTrunk} />
+        <polygon points="212,740 232,692 252,740" />
+        <rect x="228" y="740" width="8" height="13" fill={theme.treeTrunk} />
+        <polygon points="45,840 75,772 105,840" />
+        <rect x="69" y="840" width="11" height="18" fill={theme.treeTrunk} />
       </g>
       <g fill={theme.bush}>
         <circle cx="668" cy="768" r="26" />
@@ -265,11 +233,13 @@ function sceneToViewport(vx: number, vy: number): { x: string; y: string } {
   };
 }
 
-/* 캐릭터 위치 — 대기: 분기점 바로 아래 트렁크 길 위 / 걷기: 좌·우 갈래길 중간 지점 */
-const CHAR_BASE = { ...sceneToViewport(400, 856), scale: 1 };
+/* 캐릭터 경로 — 대기: 트렁크 아래쪽 / 경유: 분기점 바로 앞 / 목표: 좌·우 갈래길 중간.
+   걷기는 base → fork → target 순서로 길을 따라 이동한다. */
+const CHAR_BASE = { ...sceneToViewport(400, 940), scale: 1 };
+const CHAR_FORK = { ...sceneToViewport(400, 760), scale: 0.85 };
 const CHAR_TARGET: Record<RoadSide, { x: string; y: string; scale: number }> = {
-  left: { ...sceneToViewport(240, 782), scale: 0.8 },
-  right: { ...sceneToViewport(560, 782), scale: 0.8 },
+  left: { ...sceneToViewport(230, 678), scale: 0.7 },
+  right: { ...sceneToViewport(570, 678), scale: 0.7 },
 };
 
 export function TravelerCharacter({
@@ -282,29 +252,35 @@ export function TravelerCharacter({
   reduced: boolean;
 }) {
   const walking = phase === "walk" && side !== null && !reduced;
-  const target = walking && side ? CHAR_TARGET[side] : CHAR_BASE;
+  const walkS = CHARACTER_WALK_MS / 1000;
+  // 길을 따라가는 경유점 타이밍: 전반 55%는 트렁크 직진, 후반 45%는 갈래길 진입
+  const pathTimes = [0, 0.55, 1];
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10" aria-hidden="true">
       <motion.div
         className="absolute left-0 top-0"
         initial={false}
-        animate={{
-          x: target.x,
-          y: target.y,
-          scale: target.scale,
-          // 걸을 때 좌우로 갸우뚱거리는 걸음 wobble
-          rotate: walking ? [0, -4, 4, -4, 4, 0] : 0,
-        }}
+        animate={
+          walking && side
+            ? {
+                x: [CHAR_BASE.x, CHAR_FORK.x, CHAR_TARGET[side].x],
+                y: [CHAR_BASE.y, CHAR_FORK.y, CHAR_TARGET[side].y],
+                scale: [CHAR_BASE.scale, CHAR_FORK.scale, CHAR_TARGET[side].scale],
+                // 걸을 때 좌우로 갸우뚱거리는 걸음 wobble
+                rotate: [0, -4, 4, -4, 4, 0],
+              }
+            : { x: CHAR_BASE.x, y: CHAR_BASE.y, scale: CHAR_BASE.scale, rotate: 0 }
+        }
         transition={
           walking
             ? {
-                duration: CHARACTER_WALK_MS / 1000,
+                duration: walkS,
                 ease: "easeInOut",
-                rotate: {
-                  duration: CHARACTER_WALK_MS / 1000,
-                  times: [0, 0.2, 0.4, 0.6, 0.8, 1],
-                },
+                x: { duration: walkS, times: pathTimes, ease: "easeInOut" },
+                y: { duration: walkS, times: pathTimes, ease: "easeInOut" },
+                scale: { duration: walkS, times: pathTimes, ease: "easeInOut" },
+                rotate: { duration: walkS, times: [0, 0.2, 0.4, 0.6, 0.8, 1] },
               }
             : phase === "pan" && !reduced
               ? { duration: CAMERA_PAN_MS / 1000, ease: PAN_EASE }
