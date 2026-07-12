@@ -89,46 +89,47 @@ function BackgroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
         </linearGradient>
       </defs>
       <rect width="800" height="1200" fill={`url(#${skyId})`} />
-      {/* 해 */}
-      <circle cx="430" cy="190" r="120" fill={theme.sun} opacity="0.35" />
-      <circle cx="430" cy="190" r="66" fill={theme.sun} />
-      {/* 구름 */}
-      <g fill="#ffffff" opacity="0.8">
-        <ellipse cx="160" cy="140" rx="90" ry="22" />
-        <ellipse cx="215" cy="120" rx="55" ry="16" />
-        <ellipse cx="640" cy="170" rx="75" ry="18" opacity="0.7" />
+      {/* 해 — 주황 해 + 옅은 광륜 (질문 텍스트와 겹치지 않게 왼쪽 상단) */}
+      <circle cx="175" cy="170" r="110" fill={theme.sun} opacity="0.3" />
+      <circle cx="175" cy="170" r="62" fill={theme.sun} />
+      {/* 구름 — 크림빛 */}
+      <g fill="#fdf6e3" opacity="0.95">
+        <ellipse cx="360" cy="115" rx="85" ry="20" />
+        <ellipse cx="625" cy="165" rx="80" ry="19" />
       </g>
-      {/* 왼쪽: 산맥 (왼쪽 길의 목적지 느낌) */}
-      <g>
-        <polygon points="30,560 190,300 350,560" fill={theme.hillFar} />
-        <polygon points="150,560 280,370 410,560" fill={theme.hillNear} />
-        <polygon points="171,331 190,300 209,331 190,318" fill="#ffffff" opacity="0.9" />
+      {/* 새 */}
+      <g stroke="#5a6b8c" strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.8">
+        <path d="M 200 240 q 11 -10 22 0 q 11 -10 22 0" />
+        <path d="M 640 260 q 9 -8 18 0 q 9 -8 18 0" />
       </g>
-      {/* 오른쪽: 도시 실루엣 (오른쪽 길의 목적지 느낌) */}
+      {/* 왼쪽: 초록 산맥 (숲길 방향) */}
       <g>
-        <rect x="520" y="440" width="52" height="120" fill={theme.hillFar} />
-        <rect x="580" y="400" width="58" height="160" fill={theme.hillNear} />
-        <rect x="646" y="460" width="46" height="100" fill={theme.hillFar} />
-        <rect x="698" y="420" width="56" height="140" fill={theme.hillNear} />
-        <g fill="#ffffff" opacity="0.85">
-          <rect x="532" y="456" width="10" height="12" />
-          <rect x="550" y="456" width="10" height="12" />
-          <rect x="532" y="482" width="10" height="12" />
-          <rect x="594" y="416" width="10" height="12" />
-          <rect x="614" y="416" width="10" height="12" />
-          <rect x="594" y="444" width="10" height="12" />
-          <rect x="658" y="476" width="9" height="11" />
-          <rect x="712" y="436" width="10" height="12" />
-          <rect x="730" y="436" width="10" height="12" />
-          <rect x="712" y="464" width="10" height="12" />
+        <polygon points="20,560 170,320 320,560" fill={theme.hillFar} />
+        <polygon points="140,560 280,290 420,560" fill={theme.hillNear} />
+        <polygon points="259,331 280,290 301,331 280,315" fill="#ffffff" opacity="0.92" />
+        <polygon points="0,560 70,430 190,560" fill={theme.hillNear} opacity="0.85" />
+      </g>
+      {/* 오른쪽: 블루그레이 도시 실루엣 (도시 방향) */}
+      <g>
+        <rect x="520" y="450" width="50" height="110" fill={theme.city} />
+        <rect x="578" y="405" width="56" height="155" fill={theme.city} opacity="0.88" />
+        <rect x="642" y="465" width="46" height="95" fill={theme.city} />
+        <rect x="694" y="420" width="56" height="140" fill={theme.city} opacity="0.9" />
+        <rect x="756" y="470" width="44" height="90" fill={theme.city} />
+        <g fill={theme.cityLight}>
+          <rect x="531" y="466" width="10" height="12" />
+          <rect x="549" y="466" width="10" height="12" />
+          <rect x="531" y="492" width="10" height="12" />
+          <rect x="592" y="421" width="10" height="12" />
+          <rect x="612" y="421" width="10" height="12" />
+          <rect x="592" y="449" width="10" height="12" />
+          <rect x="654" y="481" width="9" height="11" />
+          <rect x="708" y="436" width="10" height="12" />
+          <rect x="726" y="436" width="10" height="12" />
+          <rect x="708" y="464" width="10" height="12" />
+          <rect x="768" y="486" width="9" height="11" />
         </g>
       </g>
-      {/* 지평선 부근 원경 능선 */}
-      <path
-        d="M0 530 Q 130 490 260 522 Q 400 495 540 524 Q 680 500 800 520 L 800 620 L 0 620 Z"
-        fill={theme.hillFar}
-        opacity="0.6"
-      />
     </svg>
   );
 }
@@ -158,28 +159,64 @@ function RoadArt({ theme }: { theme: SceneTheme }) {
            Z"
         fill={theme.road}
         stroke={theme.roadEdge}
-        strokeWidth="6"
+        strokeWidth="4"
+        strokeOpacity="0.7"
         strokeLinejoin="round"
       />
-      {/* 중앙 차선 — 트렁크와 두 갈래를 따라 이어진다 */}
-      <g stroke={theme.roadEdge} strokeLinecap="round" fill="none" opacity="0.6">
-        <path d="M 400 1180 L 400 870" strokeWidth="8" strokeDasharray="26 24" />
-        <path d="M 380 822 C 290 795, 180 765, 30 712" strokeWidth="6" strokeDasharray="20 18" />
-        <path d="M 420 822 C 510 795, 620 765, 770 712" strokeWidth="6" strokeDasharray="20 18" />
+      {/* 길 위 자갈 점 */}
+      <g fill={theme.roadEdge} opacity="0.55">
+        <ellipse cx="394" cy="930" rx="7" ry="4" />
+        <ellipse cx="409" cy="1005" rx="5" ry="3" />
+        <ellipse cx="391" cy="1080" rx="6" ry="3.5" />
+        <ellipse cx="406" cy="1150" rx="5" ry="3" />
+        <ellipse cx="300" cy="794" rx="5" ry="3" />
+        <ellipse cx="505" cy="794" rx="5" ry="3" />
+      </g>
+      {/* 나무 이정표 — 왼쪽 길(숲길) / 오른쪽 길(도시) */}
+      <g>
+        <rect x="252" y="790" width="10" height="88" rx="2" fill={theme.treeTrunk} />
+        <g>
+          <polygon points="181,795 165,807 181,819" fill={theme.wood} />
+          <rect x="180" y="795" width="62" height="24" rx="3" fill={theme.wood} />
+          <text
+            x="211"
+            y="812"
+            textAnchor="middle"
+            fontSize="14"
+            fontWeight="700"
+            fill="#fdf3e0"
+          >
+            숲길
+          </text>
+        </g>
+        <g>
+          <rect x="256" y="831" width="62" height="24" rx="3" fill={theme.wood} />
+          <polygon points="317,836 333,848 317,860" fill={theme.wood} />
+          <text
+            x="287"
+            y="848"
+            textAnchor="middle"
+            fontSize="14"
+            fontWeight="700"
+            fill="#fdf3e0"
+          >
+            도시
+          </text>
+        </g>
       </g>
       {/* 들판 위 소품 — 왼쪽 침엽수, 오른쪽 둥근 수풀 (참고 구도) */}
       <g fill={theme.bushDark}>
         <polygon points="130,700 155,640 180,700" />
-        <rect x="150" y="700" width="10" height="16" fill={theme.roadEdge} />
+        <rect x="150" y="700" width="10" height="16" fill={theme.treeTrunk} />
         <polygon points="215,660 235,612 255,660" />
-        <rect x="231" y="660" width="8" height="13" fill={theme.roadEdge} />
+        <rect x="231" y="660" width="8" height="13" fill={theme.treeTrunk} />
+        <polygon points="60,760 90,692 120,760" />
+        <rect x="84" y="760" width="11" height="18" fill={theme.treeTrunk} />
       </g>
       <g fill={theme.bush}>
         <circle cx="668" cy="768" r="26" />
         <circle cx="706" cy="778" r="17" />
       </g>
-      {/* 분기점 안쪽 수풀 */}
-      <ellipse cx="400" cy="792" rx="11" ry="6" fill={theme.bushDark} />
     </svg>
   );
 }
@@ -195,24 +232,21 @@ function ForegroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
     >
       <defs>
         <linearGradient id={vignetteId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1e3a8a" stopOpacity="0" />
-          <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0.14" />
+          <stop offset="0%" stopColor="#2e5c22" stopOpacity="0" />
+          <stop offset="100%" stopColor="#2e5c22" stopOpacity="0.12" />
         </linearGradient>
       </defs>
-      {/* 좌우 근경 수풀 — 화면 하단 모서리를 감싸는 프레임 */}
-      <g fill={theme.bushDark}>
-        <ellipse cx="30" cy="1210" rx="230" ry="150" />
-        <ellipse cx="770" cy="1215" rx="240" ry="160" />
-      </g>
-      <g fill={theme.bush}>
-        <ellipse cx="-20" cy="1230" rx="200" ry="130" />
-        <ellipse cx="820" cy="1235" rx="210" ry="140" />
-      </g>
-      {/* 잔돌 */}
-      <ellipse cx="250" cy="1150" rx="24" ry="11" fill={theme.roadEdge} opacity="0.5" />
-      <ellipse cx="580" cy="1130" rx="18" ry="9" fill={theme.roadEdge} opacity="0.45" />
+      {/* 하단 근경 언덕 밴드 (밝은 초록) — 길이 지나가는 부분은 비워둔 곡선 */}
+      <path
+        d="M 0 1200 L 0 1105 Q 180 1058 348 1096 L 348 1200 Z"
+        fill={theme.groundLight}
+      />
+      <path
+        d="M 452 1200 L 452 1096 Q 620 1058 800 1105 L 800 1200 Z"
+        fill={theme.groundLight}
+      />
       {/* 하단 비네트 */}
-      <rect y="1060" width="800" height="140" fill={`url(#${vignetteId})`} />
+      <rect y="1080" width="800" height="120" fill={`url(#${vignetteId})`} />
     </svg>
   );
 }
@@ -279,9 +313,9 @@ export function TravelerCharacter({
       >
         {/* 기준점(x/y)이 발끝이 되도록 위로 올려서 그린다 */}
         <div className="relative -translate-x-1/2 -translate-y-full">
-          {/* 고민 말풍선 — 대기 상태에서만 표시 */}
+          {/* 고민 말풍선 — 대기 상태에서만 표시 (꼬리 점 포함) */}
           <motion.div
-            className="absolute -right-10 -top-10 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-base font-black text-[#004be6] shadow-md"
+            className="absolute -right-12 -top-12"
             initial={false}
             animate={{ opacity: phase === "idle" ? 1 : 0, y: phase === "idle" ? [0, -3, 0] : 0 }}
             transition={{
@@ -289,7 +323,11 @@ export function TravelerCharacter({
               y: reduced ? { duration: 0 } : { duration: 2.2, repeat: Infinity, ease: "easeInOut" },
             }}
           >
-            ?
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-lg font-black text-slate-700 shadow-md">
+              ?
+            </div>
+            <div className="absolute -bottom-1.5 -left-1 h-2.5 w-2.5 rounded-full border border-slate-200 bg-white shadow-sm" />
+            <div className="absolute -bottom-3.5 -left-3 h-1.5 w-1.5 rounded-full border border-slate-200 bg-white" />
           </motion.div>
           {/* 미니멀 실루엣 캐릭터 (네이비, 화이트&블루 톤) */}
           <svg width="46" height="64" viewBox="0 0 46 64" className="drop-shadow-md">

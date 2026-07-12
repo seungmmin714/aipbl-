@@ -30,37 +30,47 @@ export function getSceneAssets(questionId: string): SceneAssets {
   };
 }
 
-/** 플레이스홀더 장면의 색 테마 (브랜드 톤 안에서 축별 색상 변주) */
+/** 플레이스홀더 장면의 색 테마 */
 export interface SceneTheme {
   skyTop: string;
   skyBottom: string;
   sun: string;
-  hillFar: string;
-  hillNear: string;
-  ground: string;
+  hillFar: string; // 산맥(원경)
+  hillNear: string; // 산맥(근경)
+  ground: string; // 들판
+  groundLight: string; // 하단 근경 언덕 밴드
   road: string;
   roadEdge: string;
   bush: string;
   bushDark: string;
+  city: string; // 도시 건물
+  cityLight: string; // 건물 창문
+  treeTrunk: string; // 나무 기둥/이정표 기둥
+  wood: string; // 이정표 판자
 }
 
-// 시작/결과 화면과 같은 화이트 & 블루 단일 팔레트 (브랜드 #004be6 계열).
-// 모든 축(R/D/L/G)이 동일한 테마를 사용해 설문 전체에 통일감을 준다.
+// 따뜻한 자연 톤 단일 팔레트 (레퍼런스: 크림 하늘 · 주황 해 · 초록 들판 ·
+// 모래색 길 · 초록 산맥 · 블루그레이 도시). 모든 축(R/D/L/G) 공통 사용.
 // (축별 변주가 다시 필요해지면 이 객체를 축별 Record로 되돌리면 된다)
 const UNIFIED_THEME: SceneTheme = {
-  skyTop: "#eef4ff",
-  skyBottom: "#bdd5f8",
-  sun: "#ffffff",
-  hillFar: "#a9c4ee",
-  hillNear: "#8fb0e6",
-  ground: "#dfe9fb",
-  road: "#fafcff",
-  roadEdge: "#8aa5cf",
-  bush: "#b7cdf1",
-  bushDark: "#9cb9ea",
+  skyTop: "#fdf0da",
+  skyBottom: "#fbe2bd",
+  sun: "#f4a952",
+  hillFar: "#b9d3a2",
+  hillNear: "#8cb97d",
+  ground: "#8cc06d",
+  groundLight: "#9bcb7d",
+  road: "#e9daa9",
+  roadEdge: "#d2bf8a",
+  bush: "#6fae56",
+  bushDark: "#58974a",
+  city: "#8b9cba",
+  cityLight: "#d5dfef",
+  treeTrunk: "#8a6b47",
+  wood: "#7d5f3e",
 };
 
-/** 문항의 axis(R/D/L/G) → 장면 테마 (현재는 전 축 공통 화이트&블루) */
+/** 문항의 axis(R/D/L/G) → 장면 테마 (현재는 전 축 공통) */
 export function getSceneTheme(_axis: string): SceneTheme {
   return UNIFIED_THEME;
 }
