@@ -97,10 +97,10 @@ function BackgroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
         <ellipse cx="360" cy="115" rx="85" ry="20" />
         <ellipse cx="625" cy="165" rx="80" ry="19" />
       </g>
-      {/* 새 */}
+      {/* 새 — 질문 텍스트 영역(상단 중앙)을 피해 좌우 가장자리에 배치 */}
       <g stroke="#5a6b8c" strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.8">
-        <path d="M 200 240 q 11 -10 22 0 q 11 -10 22 0" />
-        <path d="M 640 260 q 9 -8 18 0 q 9 -8 18 0" />
+        <path d="M 155 430 q 11 -10 22 0 q 11 -10 22 0" />
+        <path d="M 625 438 q 9 -8 18 0 q 9 -8 18 0" />
       </g>
       {/* 왼쪽: 초록 산맥 (숲길 방향) */}
       <g>
@@ -332,13 +332,45 @@ export function TravelerCharacter({
             <div className="absolute -bottom-1.5 -left-1 h-2.5 w-2.5 rounded-full border border-slate-200 bg-white shadow-sm" />
             <div className="absolute -bottom-3.5 -left-3 h-1.5 w-1.5 rounded-full border border-slate-200 bg-white" />
           </motion.div>
-          {/* 미니멀 실루엣 캐릭터 (네이비, 화이트&블루 톤) */}
-          <svg width="46" height="64" viewBox="0 0 46 64" className="drop-shadow-md">
-            <circle cx="23" cy="10" r="9" fill="#2b3a67" />
+          {/* 미니멀 실루엣 캐릭터 — 걷는 동안 다리가 앞뒤로 교차 스윙 */}
+          <svg
+            width="46"
+            height="64"
+            viewBox="0 0 46 64"
+            className="overflow-visible drop-shadow-md"
+          >
+            {/* 먼 쪽 다리 (약간 어둡게) */}
+            <motion.g
+              style={{ transformBox: "fill-box", transformOrigin: "50% 8%" }}
+              initial={false}
+              animate={{ rotate: walking ? [0, -24, 24, -24, 24, -24, 24, 0] : 0 }}
+              transition={
+                walking
+                  ? { duration: walkS, ease: "linear" }
+                  : { duration: 0.2 }
+              }
+            >
+              <rect x="24.5" y="42" width="8" height="21" rx="4" fill="#22305a" />
+            </motion.g>
+            {/* 가까운 쪽 다리 */}
+            <motion.g
+              style={{ transformBox: "fill-box", transformOrigin: "50% 8%" }}
+              initial={false}
+              animate={{ rotate: walking ? [0, 24, -24, 24, -24, 24, -24, 0] : 0 }}
+              transition={
+                walking
+                  ? { duration: walkS, ease: "linear" }
+                  : { duration: 0.2 }
+              }
+            >
+              <rect x="13.5" y="42" width="8" height="21" rx="4" fill="#2b3a67" />
+            </motion.g>
+            {/* 몸통 + 머리 (다리 관절을 덮는다) */}
             <path
-              d="M 23 20 C 32 20, 36 27, 36 38 L 34 62 L 27 62 L 26 44 L 20 44 L 19 62 L 12 62 L 10 38 C 10 27, 14 20, 23 20 Z"
+              d="M 23 20 C 32 20, 36 27, 36 38 L 35 47 L 11 47 L 10 38 C 10 27, 14 20, 23 20 Z"
               fill="#2b3a67"
             />
+            <circle cx="23" cy="10" r="9" fill="#2b3a67" />
           </svg>
         </div>
       </motion.div>
