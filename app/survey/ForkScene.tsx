@@ -5,8 +5,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { getSceneAssets, getSceneTheme, type SceneTheme } from "@/lib/scenes";
 
 /* ─── 전환 타이밍 상수 — page.tsx의 진행 로직(setTimeout)과 동기화되어야 한다 ─── */
-/** 캐릭터가 선택한 길로 걸어가는 시간 (트렁크 직진 → 분기점에서 갈래길로 진입) */
-export const CHARACTER_WALK_MS = 1400;
+/** 캐릭터가 선택한 길로 걸어가는 시간 (트렁크 직진 → 갈래길 곡선을 따라 진입) */
+export const CHARACTER_WALK_MS = 1900;
 /** 카메라 팬 이동(장면 전환) 시간 */
 export const CAMERA_PAN_MS = 900;
 /** prefers-reduced-motion: 걷기 생략, 빠른 크로스페이드 */
@@ -233,14 +233,39 @@ function sceneToViewport(vx: number, vy: number): { x: string; y: string } {
   };
 }
 
-/* 캐릭터 경로 — 대기: 트렁크 아래쪽 / 경유: 분기점 바로 앞 / 목표: 좌·우 갈래길 중간.
-   걷기는 base → fork → target 순서로 길을 따라 이동한다. */
+/* 캐릭터 대기 위치 — 트렁크 길 아래쪽 */
 const CHAR_BASE = { ...sceneToViewport(400, 940), scale: 1 };
-const CHAR_FORK = { ...sceneToViewport(400, 760), scale: 0.85 };
-const CHAR_TARGET: Record<RoadSide, { x: string; y: string; scale: number }> = {
-  left: { ...sceneToViewport(230, 678), scale: 0.7 },
-  right: { ...sceneToViewport(570, 678), scale: 0.7 },
-};
+
+/* 걷기 경로 — 도로 중심선을 따라가는 경유점들.
+   트렁크 직진 → 분기점 진입 → 갈래길 곡선을 따라 이동 (viewBox 좌표 + scale) */
+const CHAR_PATHS: Record<RoadSide, { x: string[]; y: string[]; scale: number[] }> = (() => {
+  const build = (pts: [number, number, number][]) => ({
+    x: pts.map((p) => sceneToViewport(p[0], p[1]).x),
+    y: pts.map((p) => sceneToViewport(p[0], p[1]).y),
+    scale: pts.map((p) => p[2]),
+  });
+  return {
+    left: build([
+      [400, 940, 1],
+      [400, 810, 0.94],
+      [399, 735, 0.88],
+      [335, 700, 0.82],
+      [240, 668, 0.74],
+      [145, 646, 0.66],
+    ]),
+    right: build([
+      [400, 940, 1],
+      [400, 810, 0.94],
+      [401, 735, 0.88],
+      [465, 700, 0.82],
+      [560, 668, 0.74],
+      [655, 646, 0.66],
+    ]),
+  };
+})();
+/* 경유점 타이밍: 절반은 트렁크 직진, 나머지 절반 동안 갈래길 커브를 따라간다 */
+const PATH_TIMES = [0, 0.32, 0.5, 0.64, 0.82, 1];
+const PATH_EASES = ["easeIn", "linear", "linear", "linear", "easeOut"] as const;
 
 export function TravelerCharacter({
   phase,
@@ -253,8 +278,7 @@ export function TravelerCharacter({
 }) {
   const walking = phase === "walk" && side !== null && !reduced;
   const walkS = CHARACTER_WALK_MS / 1000;
-  // 길을 따라가는 경유점 타이밍: 전반 55%는 트렁크 직진, 후반 45%는 갈래길 진입
-  const pathTimes = [0, 0.55, 1];
+  const pathEases = [...PATH_EASES];
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10" aria-hidden="true">
@@ -264,11 +288,12 @@ export function TravelerCharacter({
         animate={
           walking && side
             ? {
-                x: [CHAR_BASE.x, CHAR_FORK.x, CHAR_TARGET[side].x],
-                y: [CHAR_BASE.y, CHAR_FORK.y, CHAR_TARGET[side].y],
-                scale: [CHAR_BASE.scale, CHAR_FORK.scale, CHAR_TARGET[side].scale],
+                // 도로 중심선 경유점들을 순서대로 따라간다
+                x: CHAR_PATHS[side].x,
+                y: CHAR_PATHS[side].y,
+                scale: CHAR_PATHS[side].scale,
                 // 걸을 때 좌우로 갸우뚱거리는 걸음 wobble
-                rotate: [0, -4, 4, -4, 4, 0],
+                rotate: [0, -4, 4, -4, 4, -4, 4, 0],
               }
             : { x: CHAR_BASE.x, y: CHAR_BASE.y, scale: CHAR_BASE.scale, rotate: 0 }
         }
@@ -276,11 +301,13 @@ export function TravelerCharacter({
           walking
             ? {
                 duration: walkS,
-                ease: "easeInOut",
-                x: { duration: walkS, times: pathTimes, ease: "easeInOut" },
-                y: { duration: walkS, times: pathTimes, ease: "easeInOut" },
-                scale: { duration: walkS, times: pathTimes, ease: "easeInOut" },
-                rotate: { duration: walkS, times: [0, 0.2, 0.4, 0.6, 0.8, 1] },
+                x: { duration: walkS, times: PATH_TIMES, ease: pathEases },
+                y: { duration: walkS, times: PATH_TIMES, ease: pathEases },
+                scale: { duration: walkS, times: PATH_TIMES, ease: pathEases },
+                rotate: {
+                  duration: walkS,
+                  times: [0, 0.14, 0.29, 0.43, 0.57, 0.71, 0.86, 1],
+                },
               }
             : phase === "pan" && !reduced
               ? { duration: CAMERA_PAN_MS / 1000, ease: PAN_EASE }
