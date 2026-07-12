@@ -219,11 +219,23 @@ function ForegroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
 
 /* ─── 3인칭 캐릭터 (page.tsx에서 장면 위에 렌더링, 장면 전환과 무관하게 유지) ─── */
 
-/* 캐릭터 위치(뷰포트 기준) — 갈림길 분기점 아래 = 대기 위치 */
-const CHAR_BASE = { x: "50vw", y: "70vh", scale: 1 };
+/* 도로 레이어의 변환(-inset 12% 오버사이즈 + 원근 보정 scale)을 반영해
+   장면(viewBox 800×1200) 좌표 → 뷰포트(vw/vh) 좌표로 변환한다.
+   이 매핑이 있어야 캐릭터가 화면상 실제 도로 위에 정확히 선다. */
+const ROAD_SCALE = (PERSPECTIVE - LAYER_CONFIG.road.z) / PERSPECTIVE;
+function sceneToViewport(vx: number, vy: number): { x: string; y: string } {
+  const map = (frac: number) => 50 + (-12 + frac * 124 - 50) * ROAD_SCALE;
+  return {
+    x: `${map(vx / 800).toFixed(2)}vw`,
+    y: `${map(vy / 1200).toFixed(2)}vh`,
+  };
+}
+
+/* 캐릭터 위치 — 대기: 분기점 바로 아래 트렁크 길 위 / 걷기: 좌·우 갈래길 중간 지점 */
+const CHAR_BASE = { ...sceneToViewport(400, 856), scale: 1 };
 const CHAR_TARGET: Record<RoadSide, { x: string; y: string; scale: number }> = {
-  left: { x: "20vw", y: "60vh", scale: 0.8 },
-  right: { x: "80vw", y: "60vh", scale: 0.8 },
+  left: { ...sceneToViewport(240, 782), scale: 0.8 },
+  right: { ...sceneToViewport(560, 782), scale: 0.8 },
 };
 
 export function TravelerCharacter({
