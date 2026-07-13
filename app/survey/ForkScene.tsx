@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { getSceneAssets, getSceneTheme, type SceneTheme } from "@/lib/scenes";
+import {
+  getSceneAssets,
+  getSceneTheme,
+  SHARED_BACKGROUND_SRC,
+  type SceneTheme,
+} from "@/lib/scenes";
 
 /* ─── 전환 타이밍 상수 — page.tsx의 진행 로직(setTimeout)과 동기화되어야 한다 ─── */
 /** 캐릭터가 선택한 길로 걸어가는 시간 (트렁크 직진 → 갈래길 곡선을 따라 진입) */
@@ -130,6 +135,22 @@ function BackgroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
           <rect x="768" y="486" width="9" height="11" />
         </g>
       </g>
+      {/* 들판 — 지평선 약 47% (배경 아트의 일부로 포함해, 실제 배경 일러스트가
+          이 레이어 전체를 대체할 수 있게 한다) */}
+      <rect y="560" width="800" height="640" fill={theme.ground} />
+      {/* 들판 위 소품 — 왼쪽 침엽수, 오른쪽 둥근 수풀 */}
+      <g fill={theme.bushDark}>
+        <polygon points="125,780 150,720 175,780" />
+        <rect x="145" y="780" width="10" height="16" fill={theme.treeTrunk} />
+        <polygon points="212,740 232,692 252,740" />
+        <rect x="228" y="740" width="8" height="13" fill={theme.treeTrunk} />
+        <polygon points="45,840 75,772 105,840" />
+        <rect x="69" y="840" width="11" height="18" fill={theme.treeTrunk} />
+      </g>
+      <g fill={theme.bush}>
+        <circle cx="668" cy="768" r="26" />
+        <circle cx="706" cy="778" r="17" />
+      </g>
     </svg>
   );
 }
@@ -142,8 +163,6 @@ function RoadArt({ theme }: { theme: SceneTheme }) {
       preserveAspectRatio="none"
       aria-hidden="true"
     >
-      {/* 들판 — 지평선 약 47% */}
-      <rect y="560" width="800" height="640" fill={theme.ground} />
       {/* 3인칭 Y자 갈림길: 하단 중앙의 긴 길이 화면 약 58% 지점 분기점에서
           좌/우 화면 가장자리로 갈라진다 (캐릭터가 트렁크를 따라 걸어 올라가는 구도) */}
       <path
@@ -171,19 +190,6 @@ function RoadArt({ theme }: { theme: SceneTheme }) {
         <ellipse cx="406" cy="1130" rx="5" ry="3" />
         <ellipse cx="295" cy="688" rx="5" ry="3" />
         <ellipse cx="505" cy="688" rx="5" ry="3" />
-      </g>
-      {/* 들판 위 소품 — 왼쪽 침엽수(갈래길 아래), 오른쪽 둥근 수풀 */}
-      <g fill={theme.bushDark}>
-        <polygon points="125,780 150,720 175,780" />
-        <rect x="145" y="780" width="10" height="16" fill={theme.treeTrunk} />
-        <polygon points="212,740 232,692 252,740" />
-        <rect x="228" y="740" width="8" height="13" fill={theme.treeTrunk} />
-        <polygon points="45,840 75,772 105,840" />
-        <rect x="69" y="840" width="11" height="18" fill={theme.treeTrunk} />
-      </g>
-      <g fill={theme.bush}>
-        <circle cx="668" cy="768" r="26" />
-        <circle cx="706" cy="778" r="17" />
       </g>
     </svg>
   );
@@ -426,7 +432,14 @@ function SceneLayer({
 
   return (
     <motion.div className="absolute -inset-[12%]" style={{ z: cfg.z }} variants={variants}>
-      {kind === "background" && <BackgroundArt theme={theme} uid={uid} />}
+      {kind === "background" && (
+        <>
+          <BackgroundArt theme={theme} uid={uid} />
+          {/* 공통 배경 일러스트 — public/images/scenes/background.png가 있으면
+              플레이스홀더를 대체 (object-cover라 비율이 달라도 왜곡 없이 채움) */}
+          <LayerImage src={SHARED_BACKGROUND_SRC} />
+        </>
+      )}
       {kind === "road" && <RoadArt theme={theme} />}
       {kind === "foreground" && <ForegroundArt theme={theme} uid={uid} />}
       <LayerImage src={imageSrc} />

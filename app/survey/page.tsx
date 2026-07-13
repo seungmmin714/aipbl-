@@ -59,6 +59,31 @@ function trackComplete() {
 interface SurveyState {
   currentIdx: number;
   answers: Answer[];
+  /** 셔플된 문항 ID 순서 — 세션 동안 유지 (뒤로가기/새로고침에도 동일) */
+  order?: string[];
+}
+
+const ALL_QUESTION_IDS = questionsData.map((q) => q.id);
+const QUESTION_BY_ID = new Map(questionsData.map((q) => [q.id, q]));
+
+/** Fisher-Yates 셔플 (원본 배열은 변경하지 않음) */
+function shuffleIds(ids: string[]): string[] {
+  const arr = [...ids];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/** 저장된 순서가 현재 문항 ID 집합과 정확히 일치하는지 검증 */
+function isValidOrder(order: unknown): order is string[] {
+  return (
+    Array.isArray(order) &&
+    order.length === ALL_QUESTION_IDS.length &&
+    new Set(order).size === order.length &&
+    order.every((id) => QUESTION_BY_ID.has(id as string))
+  );
 }
 
 function loadSurveyState(): SurveyState | null {
@@ -120,17 +145,31 @@ export default function SurveyPage() {
   // 연타 방지 보강 — 같은 프레임에 두 번 클릭돼도 전환 타이머는 한 번만 등록
   const advancingRef = useRef(false);
 
+  // 문항 출제 순서 — 시작 시 무작위 셔플, 세션 동안 유지 (SSR 불일치 방지를 위해
+  // 클라이언트 마운트 후 초기화)
+  const [order, setOrder] = useState<string[] | null>(null);
+  useEffect(() => {
+    const saved = loadSurveyState();
+    setOrder(
+      saved && isValidOrder(saved.order) ? saved.order : shuffleIds(ALL_QUESTION_IDS)
+    );
+  }, []);
+
   const totalQuestions = questionsData.length;
-  const q = questionsData[currentIdx];
+  // 표시 순서(currentIdx)는 셔플된 순서 기준, 문항 자체는 ID로 조회
+  const q = order
+    ? QUESTION_BY_ID.get(order[Math.min(currentIdx, totalQuestions - 1)]) ?? null
+    : null;
 
   // 현재 문항에 대한 이전 답변을 동기적으로 계산 (DEF-09: useEffect 대신 직접 계산)
-  const prevAnswer = answers.find((a) => a.questionId === q.id);
+  const prevAnswer = q ? answers.find((a) => a.questionId === q.id) : undefined;
   const selectedValue = prevAnswer ? prevAnswer.value : null;
 
-  // sessionStorage에 상태 저장 (DEF-06)
+  // sessionStorage에 상태 저장 (DEF-06) — 셔플 순서도 함께 저장
   useEffect(() => {
-    saveSurveyState({ currentIdx, answers });
-  }, [currentIdx, answers]);
+    if (!order) return;
+    saveSurveyState({ currentIdx, answers, order });
+  }, [currentIdx, answers, order]);
 
   // 참여자 시작 기록 (DB 통계용)
   useEffect(() => {
@@ -143,8 +182,8 @@ export default function SurveyPage() {
    */
   const handleChoose = useCallback(
     (value: string, side: RoadSide) => {
-      // DEF-01/TC-13: 전환 중 클릭 방지
-      if (isTransitioning || advancingRef.current) return;
+      // DEF-01/TC-13: 전환 중 클릭 방지 (순서 초기화 전이면 무시)
+      if (!q || isTransitioning || advancingRef.current) return;
       advancingRef.current = true;
 
       // 답변 저장 — 문항별 1개로 교체 저장 (기존 로직 유지)
@@ -190,7 +229,7 @@ export default function SurveyPage() {
         }
       }, walkMs);
     },
-    [isTransitioning, reduced, currentIdx, totalQuestions, answers, q.id, router]
+    [isTransitioning, reduced, currentIdx, totalQuestions, answers, q, router]
   );
 
   const handlePrev = useCallback(() => {
@@ -203,6 +242,13 @@ export default function SurveyPage() {
       setIsTransitioning(false);
     }, 300);
   }, [currentIdx, isTransitioning]);
+
+  // 셔플 순서 초기화 전(첫 프레임) — 배경색만 렌더 (SSR/hydration 불일치 방지)
+  if (!q) {
+    return (
+      <div className="relative h-[100dvh] min-h-[560px] overflow-hidden bg-[#f4f5f9]" />
+    );
+  }
 
   return (
     <div className="relative h-[100dvh] min-h-[560px] overflow-hidden bg-[#f4f5f9] font-body-md text-[#001a42]">

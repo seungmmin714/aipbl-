@@ -5,7 +5,8 @@
 // 코드 수정 없이 자동으로 플레이스홀더(SVG 도형)를 대체합니다.
 // 이미지가 없거나 로드에 실패하면 플레이스홀더가 그대로 표시됩니다.
 //
-//   {문항ID}-background.png   하늘/원경 레이어   (예: q1-background.png)
+//   background.png            전 문항 공통 배경 (하늘/원경/들판 전체 아트)
+//   {문항ID}-background.png   문항별 배경 — 공통 배경보다 우선   (예: q1-background.png)
 //   {문항ID}-road.png         갈림길 레이어      (예: q1-road.png)
 //   {문항ID}-foreground.png   바닥/근경 레이어   (예: q1-foreground.png)
 //
@@ -14,6 +15,10 @@
 // ─────────────────────────────────────────────────────────────
 
 export const SCENES_BASE_PATH = "/images/scenes";
+
+/** 전 문항 공통 배경 일러스트 — 파일이 있으면 배경 플레이스홀더(산/도시/들판)를
+    대체한다 (object-cover). 문항별 q{n}-background.png가 있으면 그게 다시 우선. */
+export const SHARED_BACKGROUND_SRC = `${SCENES_BASE_PATH}/background.png`;
 
 export interface SceneAssets {
   background: string;
