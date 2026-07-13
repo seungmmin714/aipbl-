@@ -44,7 +44,7 @@ const ROAD_DESKTOP: RoadPath = {
 /* 세로(모바일) 이미지 background-invest-mobile.png 기준 길 좌표 */
 const ROAD_MOBILE: RoadPath = {
   start: { fx: 0.5, fy: 0.97 },
-  fork: { fx: 0.5, fy: 0.66 },
+  fork: { fx: 0.5, fy: 0.74 },
   leftEnd: { fx: 0.33, fy: 0.59 },
   rightEnd: { fx: 0.68, fy: 0.585 },
 };
