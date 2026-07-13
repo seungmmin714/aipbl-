@@ -25,10 +25,10 @@ export interface SurveyQuestion {
    start: 길 시작점(하단 중앙) · fork: 분기점(지평선 바로 아래)
    leftEnd/rightEnd: 좌·우 갈래길이 사라지는 지점(산·도시 방향) */
 const ROAD = {
-  start: { fx: 0.5, fy: 0.94 },
-  fork: { fx: 0.5, fy: 0.72 },
-  leftEnd: { fx: 0.27, fy: 0.66 },
-  rightEnd: { fx: 0.73, fy: 0.66 },
+  start: { fx: 0.49, fy: 0.93 },
+  fork: { fx: 0.49, fy: 0.8 },
+  leftEnd: { fx: 0.16, fy: 0.785 },
+  rightEnd: { fx: 0.77, fy: 0.78 },
 } as const;
 
 /* 걷기 중 캐릭터 크기 (원근: 멀어질수록 작게) */
