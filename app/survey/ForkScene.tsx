@@ -27,7 +27,7 @@ export interface SurveyQuestion {
 const ROAD = {
   // start와 fork의 fx를 동일하게 두어 분기점까지 수직 직선으로 올라간다
   start: { fx: 0.5, fy: 0.99 },
-  fork: { fx: 0.5, fy: 0.8 },
+  fork: { fx: 0.5, fy: 0.83 },
   // 갈래 끝은 길이 지평선과 만나 끝나는 지점 (그 너머는 잔디)
   leftEnd: { fx: 0.33, fy: 0.735 },
   rightEnd: { fx: 0.64, fy: 0.732 },
