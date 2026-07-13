@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { SHARED_BACKGROUND_SRC } from "@/lib/scenes";
+import { SHARED_BACKGROUND_SRC, MOBILE_BACKGROUND_SRC } from "@/lib/scenes";
 
 /* ─── 전환 타이밍 (page.tsx의 진행 로직과 동기화) ─── */
 /** 캐릭터가 길을 따라 걷는 시간 (하단 중앙 → 분기점 → 갈래길) */
@@ -24,17 +24,36 @@ export interface SurveyQuestion {
    background-invest-clean.png의 Y자 길 좌표. 실제 이미지와 어긋나면 이 값만 조정.
    start: 길 시작점(하단 중앙) · fork: 분기점(지평선 바로 아래)
    leftEnd/rightEnd: 좌·우 갈래길이 사라지는 지점(산·도시 방향) */
-const ROAD = {
+type RoadPath = {
+  start: { fx: number; fy: number };
+  fork: { fx: number; fy: number };
+  leftEnd: { fx: number; fy: number };
+  rightEnd: { fx: number; fy: number };
+};
+
+/* 가로(데스크톱) 이미지 background-invest-clean.png 기준 길 좌표 */
+const ROAD_DESKTOP: RoadPath = {
   // start와 fork의 fx를 동일하게 두어 분기점까지 수직 직선으로 올라간다
   start: { fx: 0.5, fy: 0.99 },
   fork: { fx: 0.5, fy: 0.83 },
   // 갈래 끝은 길이 지평선과 만나 끝나는 지점 (그 너머는 잔디)
   leftEnd: { fx: 0.33, fy: 0.735 },
   rightEnd: { fx: 0.64, fy: 0.732 },
-} as const;
+};
+
+/* 세로(모바일) 이미지 background-invest-mobile.png 기준 길 좌표 */
+const ROAD_MOBILE: RoadPath = {
+  start: { fx: 0.5, fy: 0.97 },
+  fork: { fx: 0.5, fy: 0.66 },
+  leftEnd: { fx: 0.33, fy: 0.59 },
+  rightEnd: { fx: 0.68, fy: 0.585 },
+};
 
 /* 걷기 중 캐릭터 크기 (원근: 멀어질수록 작게) */
 const SCALE = { start: 1, fork: 0.72, end: 0.5 } as const;
+
+/* 뷰포트가 세로로 길면(가로/세로 비율 < 1) 모바일 세로 이미지를 쓴다 */
+const PORTRAIT_THRESHOLD = 1.0;
 
 interface ForkSceneProps {
   question: SurveyQuestion;
@@ -51,19 +70,12 @@ interface ForkSceneProps {
 /* ─── 배경 이미지의 실제 렌더 영역 계산 (object-fit: cover, center bottom) ───
    이미지 비율을 자연 크기에서 읽어와, 화면 비율이 바뀌어도 캐릭터가 이미지 속
    길 위 같은 지점에 오도록 비율(fx,fy) → 화면 픽셀(x,y)로 변환한다. */
-type FitMode = "cover" | "contain";
-
 interface Geometry {
   offsetX: number;
   offsetY: number;
   dispW: number;
   dispH: number;
-  mode: FitMode;
 }
-
-// 뷰포트가 이미지보다 세로로 길면(가로 비율이 이 값보다 작으면) cover가 좌우를 크게
-// 잘라내므로 contain으로 전체 이미지를 보여준다. (모바일 세로 화면)
-const CONTAIN_ASPECT_THRESHOLD = 1.2;
 
 function useImageGeometry(natural: { w: number; h: number } | null): Geometry | null {
   const [geo, setGeo] = useState<Geometry | null>(null);
@@ -73,12 +85,8 @@ function useImageGeometry(natural: { w: number; h: number } | null): Geometry | 
     const compute = () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const mode: FitMode = vw / vh < CONTAIN_ASPECT_THRESHOLD ? "contain" : "cover";
-      // cover: 최대 배율(화면을 덮음) / contain: 최소 배율(전체가 보임)
-      const scale =
-        mode === "cover"
-          ? Math.max(vw / natural.w, vh / natural.h)
-          : Math.min(vw / natural.w, vh / natural.h);
+      // cover: 두 방향 모두 덮는 최대 배율 (가로·세로 이미지 모두 화면을 꽉 채움)
+      const scale = Math.max(vw / natural.w, vh / natural.h);
       const dispW = natural.w * scale;
       const dispH = natural.h * scale;
       setGeo({
@@ -86,7 +94,6 @@ function useImageGeometry(natural: { w: number; h: number } | null): Geometry | 
         offsetY: vh - dispH, // 세로 하단(center bottom) 정렬 — 길·초원이 항상 하단
         dispW,
         dispH,
-        mode,
       });
     };
     compute();
@@ -101,6 +108,23 @@ function useImageGeometry(natural: { w: number; h: number } | null): Geometry | 
   return geo;
 }
 
+/** 뷰포트가 세로로 길면 true (모바일 세로 이미지 사용) — resize/회전 대응 */
+function useIsPortrait(): boolean {
+  const [portrait, setPortrait] = useState(false);
+  useEffect(() => {
+    const update = () =>
+      setPortrait(window.innerWidth / window.innerHeight < PORTRAIT_THRESHOLD);
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, []);
+  return portrait;
+}
+
 /** 이미지 비율 좌표(fx,fy) → 화면 픽셀 */
 function toPx(geo: Geometry, fx: number, fy: number) {
   return { x: geo.offsetX + fx * geo.dispW, y: geo.offsetY + fy * geo.dispH };
@@ -109,11 +133,13 @@ function toPx(geo: Geometry, fx: number, fy: number) {
 /* ─── 1인칭? 아니, 3인칭 캐릭터 (길 위를 걷는다) ─── */
 function Traveler({
   geo,
+  road,
   phase,
   side,
   reduced,
 }: {
   geo: Geometry;
+  road: RoadPath;
   phase: TravelerPhase;
   side: RoadSide | null;
   reduced: boolean;
@@ -121,12 +147,12 @@ function Traveler({
   const walking = phase === "walk" && side !== null && !reduced;
   const walkS = CHARACTER_WALK_MS / 1000;
 
-  const start = toPx(geo, ROAD.start.fx, ROAD.start.fy);
-  const fork = toPx(geo, ROAD.fork.fx, ROAD.fork.fy);
+  const start = toPx(geo, road.start.fx, road.start.fy);
+  const fork = toPx(geo, road.fork.fx, road.fork.fy);
   const end = toPx(
     geo,
-    side === "left" ? ROAD.leftEnd.fx : ROAD.rightEnd.fx,
-    side === "left" ? ROAD.leftEnd.fy : ROAD.rightEnd.fy
+    side === "left" ? road.leftEnd.fx : road.rightEnd.fx,
+    side === "left" ? road.leftEnd.fy : road.rightEnd.fy
   );
 
   // 경로: 하단 중앙(start) → 수직으로 분기점(fork) → 대각선 갈래길(end)
@@ -214,43 +240,35 @@ export default function ForkScene({
   onChoose,
 }: ForkSceneProps) {
   const reduced = !!useReducedMotion();
+  const isPortrait = useIsPortrait();
   const imgRef = useRef<HTMLImageElement>(null);
   const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
   const geo = useImageGeometry(natural);
   const walking = walkSide !== null;
 
-  // 이미지가 캐시로 즉시 로드된 경우 onLoad가 안 걸릴 수 있어 보정
+  // 화면 방향에 따라 배경 이미지·길 좌표를 다르게 사용한다
+  const bgSrc = isPortrait ? MOBILE_BACKGROUND_SRC : SHARED_BACKGROUND_SRC;
+  const road = isPortrait ? ROAD_MOBILE : ROAD_DESKTOP;
+
+  // 이미지 소스가 바뀌면(방향 전환) 새 이미지의 자연 크기로 갱신 (캐시 로드 보정 포함)
   useEffect(() => {
     const el = imgRef.current;
     if (el && el.complete && el.naturalWidth > 0) {
       setNatural({ w: el.naturalWidth, h: el.naturalHeight });
+    } else {
+      setNatural(null);
     }
-  }, []);
-
-  const fitMode = geo?.mode ?? "cover";
+  }, [bgSrc]);
 
   return (
     <div className="absolute inset-0 overflow-hidden bg-[#f8ecd6]">
-      {/* contain 모드(세로 화면)에서 이미지 위/아래 빈 공간을 채우는 흐린 배경.
-          같은 이미지를 cover+블러로 확대해 가장자리 색을 자연스럽게 연장한다. */}
-      {fitMode === "contain" && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={SHARED_BACKGROUND_SRC}
-          alt=""
-          aria-hidden="true"
-          draggable={false}
-          className="absolute inset-0 h-full w-full select-none object-cover"
-          style={{ objectPosition: "center bottom", filter: "blur(28px)", transform: "scale(1.2)" }}
-        />
-      )}
-
-      {/* 배경 이미지 — 가로 화면은 cover(꽉 참), 세로 화면은 contain(전체 표시).
-          어느 경우든 center bottom으로 길·초원이 항상 하단에 보인다. */}
+      {/* 배경 이미지 — 방향별로 다른 이미지를 cover + center bottom으로 채운다.
+          가로=가로형 이미지, 세로=세로형 이미지라 어느 화면이든 잘림이 최소. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imgRef}
-        src={SHARED_BACKGROUND_SRC}
+        key={bgSrc}
+        src={bgSrc}
         alt=""
         aria-hidden="true"
         draggable={false}
@@ -260,16 +278,16 @@ export default function ForkScene({
             h: e.currentTarget.naturalHeight,
           })
         }
-        // 이미지 누락 시에도 캐릭터가 배치되도록 기본 비율(16:9)로 폴백
+        // 이미지 누락 시에도 캐릭터가 배치되도록 폴백
         onError={() => setNatural((prev) => prev ?? { w: 1600, h: 900 })}
-        className={`absolute inset-0 h-full w-full select-none ${
-          fitMode === "contain" ? "object-contain" : "object-cover"
-        }`}
+        className="absolute inset-0 h-full w-full select-none object-cover"
         style={{ objectPosition: "center bottom" }}
       />
 
       {/* 캐릭터 (이미지 렌더 영역이 계산된 뒤 배치) */}
-      {geo && <Traveler geo={geo} phase={phase} side={walkSide} reduced={reduced} />}
+      {geo && (
+        <Traveler geo={geo} road={road} phase={phase} side={walkSide} reduced={reduced} />
+      )}
 
       {/* 질문 + 선택지 오버레이 */}
       <div className="absolute inset-0 z-20">

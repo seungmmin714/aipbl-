@@ -16,12 +16,10 @@
 
 export const SCENES_BASE_PATH = "/images/scenes";
 
-/** 전 문항 공통 배경 일러스트 (길이 그려지지 않은 버전) — 파일이 있으면 배경
-    플레이스홀더(산/도시/들판)를 대체한다 (object-cover). 길은 코드로만 그린다. */
+/** 가로(데스크톱)용 배경 — Y자 갈림길이 그려진 가로형 이미지 */
 export const SHARED_BACKGROUND_SRC = `${SCENES_BASE_PATH}/background-invest-clean.png`;
-/** 배경 이미지의 지평선 위치(상단에서의 비율). 초원은 이 아래 ~28% 영역.
-    길·캐릭터 좌표 계산의 기준이며, 실제 이미지에 맞춰 미세 조정 가능. */
-export const HORIZON_VH = 72;
+/** 세로(모바일)용 배경 — Y자 갈림길이 그려진 세로형 이미지 */
+export const MOBILE_BACKGROUND_SRC = `${SCENES_BASE_PATH}/background-invest-mobile.png`;
 
 export interface SceneAssets {
   background: string;
