@@ -51,12 +51,19 @@ interface ForkSceneProps {
 /* ─── 배경 이미지의 실제 렌더 영역 계산 (object-fit: cover, center bottom) ───
    이미지 비율을 자연 크기에서 읽어와, 화면 비율이 바뀌어도 캐릭터가 이미지 속
    길 위 같은 지점에 오도록 비율(fx,fy) → 화면 픽셀(x,y)로 변환한다. */
+type FitMode = "cover" | "contain";
+
 interface Geometry {
   offsetX: number;
   offsetY: number;
   dispW: number;
   dispH: number;
+  mode: FitMode;
 }
+
+// 뷰포트가 이미지보다 세로로 길면(가로 비율이 이 값보다 작으면) cover가 좌우를 크게
+// 잘라내므로 contain으로 전체 이미지를 보여준다. (모바일 세로 화면)
+const CONTAIN_ASPECT_THRESHOLD = 1.2;
 
 function useImageGeometry(natural: { w: number; h: number } | null): Geometry | null {
   const [geo, setGeo] = useState<Geometry | null>(null);
@@ -66,15 +73,20 @@ function useImageGeometry(natural: { w: number; h: number } | null): Geometry | 
     const compute = () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      // cover: 두 방향 모두 덮는 최대 배율
-      const scale = Math.max(vw / natural.w, vh / natural.h);
+      const mode: FitMode = vw / vh < CONTAIN_ASPECT_THRESHOLD ? "contain" : "cover";
+      // cover: 최대 배율(화면을 덮음) / contain: 최소 배율(전체가 보임)
+      const scale =
+        mode === "cover"
+          ? Math.max(vw / natural.w, vh / natural.h)
+          : Math.min(vw / natural.w, vh / natural.h);
       const dispW = natural.w * scale;
       const dispH = natural.h * scale;
       setGeo({
-        offsetX: (vw - dispW) / 2, // 가로 중앙
-        offsetY: vh - dispH, // 세로 하단(center bottom) 기준
+        offsetX: (vw - dispW) / 2, // 가로 중앙 정렬
+        offsetY: vh - dispH, // 세로 하단(center bottom) 정렬 — 길·초원이 항상 하단
         dispW,
         dispH,
+        mode,
       });
     };
     compute();
@@ -215,10 +227,26 @@ export default function ForkScene({
     }
   }, []);
 
+  const fitMode = geo?.mode ?? "cover";
+
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      {/* 배경 이미지 — cover + center bottom (길과 초원이 항상 하단에 보임).
-          세로 화면에서도 cover가 높이를 채워 분기점이 잘리지 않는다. */}
+    <div className="absolute inset-0 overflow-hidden bg-[#f8ecd6]">
+      {/* contain 모드(세로 화면)에서 이미지 위/아래 빈 공간을 채우는 흐린 배경.
+          같은 이미지를 cover+블러로 확대해 가장자리 색을 자연스럽게 연장한다. */}
+      {fitMode === "contain" && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={SHARED_BACKGROUND_SRC}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          className="absolute inset-0 h-full w-full select-none object-cover"
+          style={{ objectPosition: "center bottom", filter: "blur(28px)", transform: "scale(1.2)" }}
+        />
+      )}
+
+      {/* 배경 이미지 — 가로 화면은 cover(꽉 참), 세로 화면은 contain(전체 표시).
+          어느 경우든 center bottom으로 길·초원이 항상 하단에 보인다. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         ref={imgRef}
@@ -234,7 +262,9 @@ export default function ForkScene({
         }
         // 이미지 누락 시에도 캐릭터가 배치되도록 기본 비율(16:9)로 폴백
         onError={() => setNatural((prev) => prev ?? { w: 1600, h: 900 })}
-        className="absolute inset-0 h-full w-full select-none object-cover"
+        className={`absolute inset-0 h-full w-full select-none ${
+          fitMode === "contain" ? "object-contain" : "object-cover"
+        }`}
         style={{ objectPosition: "center bottom" }}
       />
 
