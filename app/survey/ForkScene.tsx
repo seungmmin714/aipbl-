@@ -25,15 +25,15 @@ export interface SurveyQuestion {
    start: 길 시작점(하단 중앙) · fork: 분기점(지평선 바로 아래)
    leftEnd/rightEnd: 좌·우 갈래길이 사라지는 지점(산·도시 방향) */
 const ROAD = {
-  start: { fx: 0.475, fy: 0.92 },
-  fork: { fx: 0.475, fy: 0.8 },
+  start: { fx: 0.49, fy: 0.95 },
+  fork: { fx: 0.48, fy: 0.8 },
   // 갈래 끝은 길이 지평선과 만나 끝나는 지점 (그 너머는 잔디)
-  leftEnd: { fx: 0.35, fy: 0.75 },
-  rightEnd: { fx: 0.62, fy: 0.746 },
+  leftEnd: { fx: 0.33, fy: 0.735 },
+  rightEnd: { fx: 0.64, fy: 0.732 },
 } as const;
 
 /* 걷기 중 캐릭터 크기 (원근: 멀어질수록 작게) */
-const SCALE = { start: 1, fork: 0.74, end: 0.58 } as const;
+const SCALE = { start: 1, fork: 0.72, end: 0.5 } as const;
 
 interface ForkSceneProps {
   question: SurveyQuestion;

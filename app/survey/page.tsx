@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { calculateMBTI, Answer } from "@/lib/mbti";
 import questionsData from "@/data/questions.json";
 import ForkScene, {
@@ -137,6 +137,8 @@ export default function SurveyPage() {
   const [phase, setPhase] = useState<TravelerPhase>("idle");
   // 걷는 방향 — 선택 버튼 하이라이트 + 캐릭터 이동 방향
   const [walkSide, setWalkSide] = useState<RoadSide | null>(null);
+  // 문항 전환 흰 화면 플래시
+  const [flashing, setFlashing] = useState(false);
   // 연타 방지 보강 — 같은 프레임에 두 번 클릭돼도 전환 타이머는 한 번만 등록
   const advancingRef = useRef(false);
 
@@ -190,32 +192,45 @@ export default function SurveyPage() {
       setPhase("walk");
       setIsTransitioning(true);
 
+      const isLast = currentIdx >= totalQuestions - 1;
       const walkMs = reduced ? REDUCED_WALK_MS : CHARACTER_WALK_MS;
+      // 흰 화면 페이드 인/아웃 (합계 약 0.5초)
+      const flashHalf = reduced ? 120 : 250;
+
+      const finish = () => {
+        const finalAnswers = answers.filter((a) => a.questionId !== q.id);
+        finalAnswers.push({ questionId: q.id, value });
+        try {
+          const result = calculateMBTI(finalAnswers);
+          clearSurveyState(); // 완주 시 sessionStorage 정리 (TC-20)
+          trackComplete(); // 완료 시각 기록 (participantId는 유지 — 결과/피드백 연결용)
+          router.push(`/result/${result.code}`);
+        } catch (err) {
+          console.error("채점 오류:", err);
+          clearSurveyState();
+          router.push("/");
+        }
+      };
+
+      // 1) 걷기 완료 → 흰 화면 페이드 인
       window.setTimeout(() => {
-        advancingRef.current = false;
-        if (currentIdx < totalQuestions - 1) {
-          // 걷기 완료 → 문항 교체, 캐릭터는 시작점으로 리셋
+        if (isLast) {
+          finish();
+          return;
+        }
+        setFlashing(true);
+        // 2) 화면이 흰색으로 덮인 동안 문항 교체 + 캐릭터 시작점 리셋
+        window.setTimeout(() => {
           setCurrentIdx((prev) => prev + 1);
           setWalkSide(null);
           setPhase("idle");
-          setIsTransitioning(false);
-        } else {
-          // 마지막 문항 → 결과 계산 (기존 handleNext의 완주 처리와 동일)
-          const finalAnswers = answers.filter((a) => a.questionId !== q.id);
-          finalAnswers.push({ questionId: q.id, value });
-
-          try {
-            const result = calculateMBTI(finalAnswers);
-            clearSurveyState(); // 완주 시 sessionStorage 정리 (TC-20)
-            trackComplete(); // 완료 시각 기록 (participantId는 유지 — 결과/피드백 연결용)
-            router.push(`/result/${result.code}`);
-          } catch (err) {
-            console.error("채점 오류:", err);
-            // 에러 발생 시에도 가능한 코드로 이동
-            clearSurveyState();
-            router.push("/");
-          }
-        }
+          // 3) 흰 화면 페이드 아웃 → 새 문항 선택 대기
+          window.setTimeout(() => {
+            setFlashing(false);
+            setIsTransitioning(false);
+            advancingRef.current = false;
+          }, flashHalf);
+        }, flashHalf);
       }, walkMs);
     },
     [isTransitioning, reduced, currentIdx, totalQuestions, answers, q, router]
@@ -252,6 +267,14 @@ export default function SurveyPage() {
         phase={phase}
         isTransitioning={isTransitioning}
         onChoose={handleChoose}
+      />
+
+      {/* 문항 전환 흰 화면 플래시 (걷기 완료 → 흰색 → 새 문항) */}
+      <motion.div
+        className="pointer-events-none absolute inset-0 z-40 bg-white"
+        initial={false}
+        animate={{ opacity: flashing ? 1 : 0 }}
+        transition={{ duration: reduced ? 0.12 : 0.25, ease: "easeInOut" }}
       />
 
       {/* 상단 플로팅 크롬 (장면 리마운트와 무관하게 유지) */}
