@@ -94,67 +94,57 @@ function BackgroundArt({ theme, uid }: { theme: SceneTheme; uid: string }) {
         </linearGradient>
       </defs>
       <rect width="800" height="1200" fill={`url(#${skyId})`} />
-      {/* 해 — 주황 해 + 옅은 광륜 (질문 텍스트와 겹치지 않게 왼쪽 상단) */}
-      <circle cx="175" cy="170" r="110" fill={theme.sun} opacity="0.3" />
-      <circle cx="175" cy="170" r="62" fill={theme.sun} />
+      {/* 해 — 주황 해 + 옅은 광륜 (왼쪽 상단) */}
+      <circle cx="150" cy="150" r="105" fill={theme.sun} opacity="0.3" />
+      <circle cx="150" cy="150" r="58" fill={theme.sun} />
       {/* 구름 — 크림빛 */}
       <g fill="#fdf6e3" opacity="0.95">
-        <ellipse cx="360" cy="115" rx="85" ry="20" />
-        <ellipse cx="625" cy="165" rx="80" ry="19" />
+        <ellipse cx="360" cy="110" rx="85" ry="20" />
+        <ellipse cx="640" cy="200" rx="80" ry="19" />
       </g>
-      {/* 새 — 질문 텍스트 영역(상단 중앙)을 피해 좌우 가장자리에 배치 */}
-      <g stroke="#5a6b8c" strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.8">
-        <path d="M 155 430 q 11 -10 22 0 q 11 -10 22 0" />
-        <path d="M 625 438 q 9 -8 18 0 q 9 -8 18 0" />
+      {/* 새 — 질문/부제 텍스트 블록 아래, 산 위 하늘에 배치 (모바일에서도 안 겹침) */}
+      <g stroke="#5a6b8c" strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.7">
+        <path d="M 170 470 q 11 -10 22 0 q 11 -10 22 0" />
+        <path d="M 640 455 q 9 -8 18 0 q 9 -8 18 0" />
       </g>
-      {/* 왼쪽: 초록 산맥 (숲길 방향) */}
+      {/* 왼쪽: 초록 산맥 (차트·성장 방향) — 지평선(y≈758) 위로 솟음 */}
       <g>
-        <polygon points="20,560 170,320 320,560" fill={theme.hillFar} />
-        <polygon points="140,560 280,290 420,560" fill={theme.hillNear} />
-        <polygon points="259,331 280,290 301,331 280,315" fill="#ffffff" opacity="0.92" />
-        <polygon points="0,560 70,430 190,560" fill={theme.hillNear} opacity="0.85" />
+        <polygon points="0,758 130,540 270,758" fill={theme.hillFar} />
+        <polygon points="120,758 265,500 410,758" fill={theme.hillNear} />
+        <polygon points="244,541 265,500 286,541 265,525" fill="#ffffff" opacity="0.92" />
+        <polygon points="-30,758 45,620 165,758" fill={theme.hillNear} opacity="0.85" />
       </g>
-      {/* 오른쪽: 블루그레이 도시 실루엣 (도시 방향) */}
+      {/* 오른쪽: 블루그레이 도시 실루엣 (은행·안전자산 방향) */}
       <g>
-        <rect x="520" y="450" width="50" height="110" fill={theme.city} />
-        <rect x="578" y="405" width="56" height="155" fill={theme.city} opacity="0.88" />
-        <rect x="642" y="465" width="46" height="95" fill={theme.city} />
-        <rect x="694" y="420" width="56" height="140" fill={theme.city} opacity="0.9" />
-        <rect x="756" y="470" width="44" height="90" fill={theme.city} />
+        <rect x="520" y="648" width="50" height="110" fill={theme.city} />
+        <rect x="578" y="603" width="56" height="155" fill={theme.city} opacity="0.88" />
+        <rect x="642" y="663" width="46" height="95" fill={theme.city} />
+        <rect x="694" y="618" width="56" height="140" fill={theme.city} opacity="0.9" />
+        <rect x="756" y="668" width="52" height="90" fill={theme.city} />
         <g fill={theme.cityLight}>
-          <rect x="531" y="466" width="10" height="12" />
-          <rect x="549" y="466" width="10" height="12" />
-          <rect x="531" y="492" width="10" height="12" />
-          <rect x="592" y="421" width="10" height="12" />
-          <rect x="612" y="421" width="10" height="12" />
-          <rect x="592" y="449" width="10" height="12" />
-          <rect x="654" y="481" width="9" height="11" />
-          <rect x="708" y="436" width="10" height="12" />
-          <rect x="726" y="436" width="10" height="12" />
-          <rect x="708" y="464" width="10" height="12" />
-          <rect x="768" y="486" width="9" height="11" />
+          <rect x="531" y="664" width="10" height="12" />
+          <rect x="549" y="664" width="10" height="12" />
+          <rect x="531" y="690" width="10" height="12" />
+          <rect x="592" y="619" width="10" height="12" />
+          <rect x="612" y="619" width="10" height="12" />
+          <rect x="592" y="647" width="10" height="12" />
+          <rect x="654" y="679" width="9" height="11" />
+          <rect x="708" y="634" width="10" height="12" />
+          <rect x="726" y="634" width="10" height="12" />
+          <rect x="708" y="662" width="10" height="12" />
+          <rect x="768" y="684" width="9" height="11" />
         </g>
       </g>
-      {/* 들판 — 지평선 약 47% (배경 아트의 일부로 포함해, 실제 배경 일러스트가
-          이 레이어 전체를 대체할 수 있게 한다) */}
-      <rect y="560" width="800" height="640" fill={theme.ground} />
-      {/* 들판 위 소품 — 왼쪽 침엽수, 오른쪽 둥근 수풀 */}
-      <g fill={theme.bushDark}>
-        <polygon points="125,780 150,720 175,780" />
-        <rect x="145" y="780" width="10" height="16" fill={theme.treeTrunk} />
-        <polygon points="212,740 232,692 252,740" />
-        <rect x="228" y="740" width="8" height="13" fill={theme.treeTrunk} />
-        <polygon points="45,840 75,772 105,840" />
-        <rect x="69" y="840" width="11" height="18" fill={theme.treeTrunk} />
-      </g>
-      <g fill={theme.bush}>
-        <circle cx="668" cy="768" r="26" />
-        <circle cx="706" cy="778" r="17" />
-      </g>
+      {/* 들판 — 지평선 약 72% (실제 배경 이미지가 이 레이어를 대체할 수 있게 포함) */}
+      <rect y="758" width="800" height="442" fill={theme.ground} />
     </svg>
   );
 }
 
+/* Y자 길은 초원 영역(지평선 viewBox y≈788 아래)에만 그린다.
+   분기점 y≈918(≈88vh, 초원 중하단)에서 두 갈래가 대각선으로 좌상단/우상단의
+   지평선 근처(y≈802, 산·도시 방향)까지 뻗으며 뾰족하게 가늘어진다.
+   분기점을 낮춰 수직 낙차를 확보 → 넓은 화면에서도 수평(시소)으로 안 보인다. */
 function RoadArt({ theme }: { theme: SceneTheme }) {
   return (
     <svg
@@ -163,18 +153,18 @@ function RoadArt({ theme }: { theme: SceneTheme }) {
       preserveAspectRatio="none"
       aria-hidden="true"
     >
-      {/* 3인칭 Y자 갈림길: 하단 중앙의 긴 길이 화면 약 58% 지점 분기점에서
-          좌/우 화면 가장자리로 갈라진다 (캐릭터가 트렁크를 따라 걸어 올라가는 구도) */}
       <path
-        d="M 352 1200
-           C 358 1030, 370 850, 381 730
-           C 300 706, 180 676, -30 636
-           L -30 596
-           C 180 648, 310 676, 400 690
-           C 490 676, 620 648, 830 596
-           L 830 636
-           C 620 676, 500 706, 419 730
-           C 430 850, 442 1030, 448 1200
+        d="M 250 1200
+           C 300 1080, 350 985, 372 924
+           C 344 888, 308 846, 276 802
+           L 294 812
+           C 328 852, 366 902, 392 936
+           L 400 942
+           L 410 936
+           C 436 902, 474 852, 508 812
+           L 526 802
+           C 494 846, 458 888, 430 924
+           C 452 985, 502 1080, 550 1200
            Z"
         fill={theme.road}
         stroke={theme.roadEdge}
@@ -182,14 +172,17 @@ function RoadArt({ theme }: { theme: SceneTheme }) {
         strokeOpacity="0.7"
         strokeLinejoin="round"
       />
+      {/* 중앙 차선 — 트렁크 + 두 갈래를 따라 점선 (갈래는 점점 짧은 대시로 원근감) */}
+      <g stroke={theme.roadEdge} strokeLinecap="round" fill="none" opacity="0.5">
+        <path d="M 400 1150 L 400 930" strokeWidth="7" strokeDasharray="24 22" />
+        <path d="M 394 928 C 366 888, 330 844, 286 806" strokeWidth="4.5" strokeDasharray="15 15" />
+        <path d="M 406 928 C 434 888, 470 844, 514 806" strokeWidth="4.5" strokeDasharray="15 15" />
+      </g>
       {/* 길 위 자갈 점 */}
-      <g fill={theme.roadEdge} opacity="0.55">
-        <ellipse cx="394" cy="830" rx="7" ry="4" />
-        <ellipse cx="409" cy="930" rx="5" ry="3" />
-        <ellipse cx="391" cy="1030" rx="6" ry="3.5" />
-        <ellipse cx="406" cy="1130" rx="5" ry="3" />
-        <ellipse cx="295" cy="688" rx="5" ry="3" />
-        <ellipse cx="505" cy="688" rx="5" ry="3" />
+      <g fill={theme.roadEdge} opacity="0.5">
+        <ellipse cx="390" cy="1000" rx="6" ry="3.5" />
+        <ellipse cx="412" cy="1080" rx="5" ry="3" />
+        <ellipse cx="394" cy="1150" rx="6" ry="3.5" />
       </g>
     </svg>
   );
@@ -239,11 +232,11 @@ function sceneToViewport(vx: number, vy: number): { x: string; y: string } {
   };
 }
 
-/* 캐릭터 대기 위치 — 트렁크 길 아래쪽 */
-const CHAR_BASE = { ...sceneToViewport(400, 940), scale: 1 };
+/* 캐릭터 대기 위치 — 분기점 바로 아래 트렁크 위(≈95vh) */
+const CHAR_BASE = { ...sceneToViewport(400, 985), scale: 1 };
 
-/* 걷기 경로 — 도로 중심선을 따라가는 경유점들.
-   트렁크 직진 → 분기점 진입 → 갈래길 곡선을 따라 이동 (viewBox 좌표 + scale) */
+/* 걷기 경로 — 도로 중심선(트렁크 → 분기점 → 갈래길)을 따라가는 경유점들.
+   길이 초원 영역에 압축돼 있어 갈래길에서 크게 작아지며 지평선 쪽으로 사라진다. */
 const CHAR_PATHS: Record<RoadSide, { x: string[]; y: string[]; scale: number[] }> = (() => {
   const build = (pts: [number, number, number][]) => ({
     x: pts.map((p) => sceneToViewport(p[0], p[1]).x),
@@ -252,20 +245,20 @@ const CHAR_PATHS: Record<RoadSide, { x: string[]; y: string[]; scale: number[] }
   });
   return {
     left: build([
-      [400, 940, 1],
-      [400, 810, 0.94],
-      [399, 735, 0.88],
-      [335, 700, 0.82],
-      [240, 668, 0.74],
-      [145, 646, 0.66],
+      [400, 985, 1],
+      [400, 930, 0.9],
+      [388, 912, 0.82],
+      [344, 872, 0.68],
+      [308, 838, 0.56],
+      [286, 808, 0.48],
     ]),
     right: build([
-      [400, 940, 1],
-      [400, 810, 0.94],
-      [401, 735, 0.88],
-      [465, 700, 0.82],
-      [560, 668, 0.74],
-      [655, 646, 0.66],
+      [400, 985, 1],
+      [400, 930, 0.9],
+      [412, 912, 0.82],
+      [456, 872, 0.68],
+      [492, 838, 0.56],
+      [514, 808, 0.48],
     ]),
   };
 })();
@@ -545,9 +538,9 @@ export default function ForkScene({
           </p>
         </motion.div>
 
-        {/* 선택지 버튼 — 좌/우로 갈라지는 길 위에 오버레이 */}
+        {/* 선택지 버튼 — 두 갈래 길이 지평선 쪽으로 사라지는 방향(좌/우) 근처에 오버레이 */}
         <div
-          className="absolute inset-x-0 top-[42%] flex justify-between gap-3 px-4 sm:px-8"
+          className="absolute inset-x-0 top-[55%] flex justify-between gap-3 px-4 sm:px-8"
           role="radiogroup"
           aria-label={question.text}
         >
