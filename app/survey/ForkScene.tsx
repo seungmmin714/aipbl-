@@ -25,7 +25,7 @@ export interface SurveyQuestion {
    start: 길 시작점(하단 중앙) · fork: 분기점(지평선 바로 아래)
    leftEnd/rightEnd: 좌·우 갈래길이 사라지는 지점(산·도시 방향) */
 const ROAD = {
-  start: { fx: 0.51, fy: 0.965 },
+  start: { fx: 0.5, fy: 0.97 },
   fork: { fx: 0.48, fy: 0.8 },
   // 갈래 끝은 길이 지평선과 만나 끝나는 지점 (그 너머는 잔디)
   leftEnd: { fx: 0.33, fy: 0.735 },
